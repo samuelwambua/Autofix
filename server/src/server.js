@@ -9,6 +9,7 @@ dotenv.config();
 
 const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
+const clientRoutes = require('./routes/clientRoutes');
 
 // Connect to PostgreSQL
 connectDB();
@@ -32,6 +33,7 @@ app.get('/', (req, res) => {
 
 // ─── API Routes ───────────────────────────────────────────
 app.use('/api/auth', authRoutes);
+app.use('/api/clients', clientRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────
 app.use((req, res) => {
