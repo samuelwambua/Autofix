@@ -11,6 +11,7 @@ const { connectDB } = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const clientRoutes = require('./routes/clientRoutes');
 const staffRoutes = require('./routes/staffRoutes');
+const vehicleRoutes = require('./routes/vehicleRoutes');
 
 // Connect to PostgreSQL
 connectDB();
@@ -36,6 +37,7 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/clients', clientRoutes);
 app.use('/api/staff', staffRoutes);
+app.use('/api/vehicles', vehicleRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────
 app.use((req, res) => {
