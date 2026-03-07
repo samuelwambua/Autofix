@@ -8,6 +8,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { connectDB } = require('./config/db');
+const authRoutes = require('./routes/authRoutes');
 
 // Connect to PostgreSQL
 connectDB();
@@ -28,6 +29,9 @@ app.get('/', (req, res) => {
     message: 'AutoFix API is running...',
   });
 });
+
+// ─── API Routes ───────────────────────────────────────────
+app.use('/api/auth', authRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────
 app.use((req, res) => {
