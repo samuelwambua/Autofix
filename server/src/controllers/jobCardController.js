@@ -12,7 +12,6 @@ const createJobCard = async (req, res) => {
       notes,
     } = req.body;
 
-    // Validate required fields
     if (!vehicle_id || !description) {
       return res.status(400).json({
         success: false,
@@ -20,7 +19,6 @@ const createJobCard = async (req, res) => {
       });
     }
 
-    // Check if vehicle exists
     const vehicleExists = await pool.query(
       'SELECT id FROM vehicles WHERE id = $1',
       [vehicle_id]
@@ -32,7 +30,6 @@ const createJobCard = async (req, res) => {
       });
     }
 
-    // Check if appointment exists if provided
     if (appointment_id) {
       const appointmentExists = await pool.query(
         'SELECT id FROM appointments WHERE id = $1',
@@ -46,7 +43,6 @@ const createJobCard = async (req, res) => {
       }
     }
 
-    // Check if mechanic exists if provided
     if (mechanic_id) {
       const mechanicExists = await pool.query(
         'SELECT id FROM users WHERE id = $1 AND role = $2 AND is_active = TRUE',
@@ -75,6 +71,17 @@ const createJobCard = async (req, res) => {
       ]
     );
 
+    const jobCard = result.rows[0];
+
+    // If a primary mechanic is provided, add them to assignments table too
+    if (mechanic_id) {
+      await pool.query(
+        `INSERT INTO job_card_assignments (job_id, mechanic_id, role)
+         VALUES ($1, $2, $3)`,
+        [jobCard.id, mechanic_id, 'Primary Mechanic']
+      );
+    }
+
     // If linked to appointment, update appointment status to confirmed
     if (appointment_id) {
       await pool.query(
@@ -86,7 +93,7 @@ const createJobCard = async (req, res) => {
     return res.status(201).json({
       success: true,
       message: 'Job card created successfully.',
-      data: result.rows[0],
+      data: jobCard,
     });
   } catch (error) {
     console.error('Create Job Card Error:', error.message);
@@ -134,7 +141,7 @@ const getAllJobCards = async (req, res) => {
 const getMyJobCards = async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT jc.*,
+      `SELECT DISTINCT jc.*,
               v.make || ' ' || v.model AS vehicle_name,
               v.plate_number,
               c.first_name || ' ' || c.last_name AS client_name,
@@ -142,7 +149,8 @@ const getMyJobCards = async (req, res) => {
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
-       WHERE jc.mechanic_id = $1
+       LEFT JOIN job_card_assignments jca ON jc.id = jca.job_id
+       WHERE jc.mechanic_id = $1 OR jca.mechanic_id = $1
        ORDER BY jc.created_at DESC`,
       [req.user.id]
     );
@@ -162,12 +170,11 @@ const getMyJobCards = async (req, res) => {
 };
 
 
-// ─── Get Job Cards for a Client's Vehicle ─────────────────
+// ─── Get Job Cards for a Vehicle ─────────────────────────
 const getJobCardsByVehicle = async (req, res) => {
   try {
     const { vehicleId } = req.params;
 
-    // Check vehicle exists
     const vehicleExists = await pool.query(
       `SELECT v.*, c.first_name || ' ' || c.last_name AS owner_name
        FROM vehicles v
@@ -182,7 +189,6 @@ const getJobCardsByVehicle = async (req, res) => {
       });
     }
 
-    // If client is requesting, make sure it's their vehicle
     if (
       req.user.role === 'client' &&
       vehicleExists.rows[0].client_id !== req.user.id
@@ -250,7 +256,6 @@ const getJobCardById = async (req, res) => {
       });
     }
 
-    // If client is requesting, make sure it's their vehicle
     if (
       req.user.role === 'client' &&
       result.rows[0].client_id !== req.user.id
@@ -260,6 +265,18 @@ const getJobCardById = async (req, res) => {
         message: 'Access denied. This job card does not belong to you.',
       });
     }
+
+    // Get all assigned mechanics
+    const mechanicsResult = await pool.query(
+      `SELECT jca.id, jca.role, jca.assigned_at,
+              u.id AS mechanic_id,
+              u.first_name || ' ' || u.last_name AS mechanic_name,
+              u.specialization
+       FROM job_card_assignments jca
+       JOIN users u ON jca.mechanic_id = u.id
+       WHERE jca.job_id = $1`,
+      [id]
+    );
 
     // Get parts used in this job
     const partsResult = await pool.query(
@@ -276,6 +293,7 @@ const getJobCardById = async (req, res) => {
       success: true,
       data: {
         ...result.rows[0],
+        assigned_mechanics: mechanicsResult.rows,
         parts_used: partsResult.rows,
       },
     });
@@ -311,7 +329,6 @@ const updateJobStatus = async (req, res) => {
       });
     }
 
-    // Check if job card exists
     const jobExists = await pool.query(
       'SELECT * FROM job_cards WHERE id = $1',
       [id]
@@ -323,18 +340,24 @@ const updateJobStatus = async (req, res) => {
       });
     }
 
-    // If mechanic is updating, make sure it's their job
-    if (
-      req.user.role === 'mechanic' &&
-      jobExists.rows[0].mechanic_id !== req.user.id
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. This job card is not assigned to you.',
-      });
+    // If mechanic is updating, make sure they are assigned to this job
+    if (req.user.role === 'mechanic') {
+      const isAssigned = await pool.query(
+        `SELECT id FROM job_card_assignments
+         WHERE job_id = $1 AND mechanic_id = $2`,
+        [id, req.user.id]
+      );
+      if (
+        jobExists.rows[0].mechanic_id !== req.user.id &&
+        isAssigned.rows.length === 0
+      ) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. You are not assigned to this job.',
+        });
+      }
     }
 
-    // Set actual completion time if status is completed
     const actual_completion = status === 'completed' ? new Date() : null;
 
     const result = await pool.query(
@@ -364,11 +387,11 @@ const updateJobStatus = async (req, res) => {
 };
 
 
-// ─── Assign Mechanic to Job Card ──────────────────────────
+// ─── Assign Additional Mechanic to Job Card ───────────────
 const assignMechanic = async (req, res) => {
   try {
     const { id } = req.params;
-    const { mechanic_id } = req.body;
+    const { mechanic_id, role } = req.body;
 
     if (!mechanic_id) {
       return res.status(400).json({
@@ -377,7 +400,6 @@ const assignMechanic = async (req, res) => {
       });
     }
 
-    // Check if job card exists
     const jobExists = await pool.query(
       'SELECT id FROM job_cards WHERE id = $1',
       [id]
@@ -389,7 +411,6 @@ const assignMechanic = async (req, res) => {
       });
     }
 
-    // Check if mechanic exists and is active
     const mechanicExists = await pool.query(
       'SELECT id, first_name, last_name FROM users WHERE id = $1 AND role = $2 AND is_active = TRUE',
       [mechanic_id, 'mechanic']
@@ -401,21 +422,121 @@ const assignMechanic = async (req, res) => {
       });
     }
 
-    const result = await pool.query(
-      `UPDATE job_cards
-       SET mechanic_id = $1, updated_at = NOW()
-       WHERE id = $2
-       RETURNING *`,
-      [mechanic_id, id]
+    // Check if mechanic is already assigned to this job
+    const alreadyAssigned = await pool.query(
+      'SELECT id FROM job_card_assignments WHERE job_id = $1 AND mechanic_id = $2',
+      [id, mechanic_id]
+    );
+    if (alreadyAssigned.rows.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'This mechanic is already assigned to this job.',
+      });
+    }
+
+    // Add to assignments table
+    await pool.query(
+      `INSERT INTO job_card_assignments (job_id, mechanic_id, role)
+       VALUES ($1, $2, $3)`,
+      [id, mechanic_id, role || 'Mechanic']
+    );
+
+    // Get all assigned mechanics for this job
+    const allAssigned = await pool.query(
+      `SELECT jca.id, jca.role, jca.assigned_at,
+              u.id AS mechanic_id,
+              u.first_name || ' ' || u.last_name AS mechanic_name,
+              u.specialization
+       FROM job_card_assignments jca
+       JOIN users u ON jca.mechanic_id = u.id
+       WHERE jca.job_id = $1`,
+      [id]
     );
 
     return res.status(200).json({
       success: true,
-      message: `Mechanic ${mechanicExists.rows[0].first_name} ${mechanicExists.rows[0].last_name} assigned to job successfully.`,
-      data: result.rows[0],
+      message: `${mechanicExists.rows[0].first_name} ${mechanicExists.rows[0].last_name} assigned to job successfully.`,
+      data: allAssigned.rows,
     });
   } catch (error) {
     console.error('Assign Mechanic Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again.',
+    });
+  }
+};
+
+
+// ─── Remove Mechanic from Job Card ───────────────────────
+const removeMechanic = async (req, res) => {
+  try {
+    const { id, mechanicId } = req.params;
+
+    const result = await pool.query(
+      `DELETE FROM job_card_assignments
+       WHERE job_id = $1 AND mechanic_id = $2
+       RETURNING id`,
+      [id, mechanicId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Assignment not found.',
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: 'Mechanic removed from job successfully.',
+    });
+  } catch (error) {
+    console.error('Remove Mechanic Error:', error.message);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error. Please try again.',
+    });
+  }
+};
+
+
+// ─── Get All Mechanics on a Job Card ─────────────────────
+const getJobMechanics = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const jobExists = await pool.query(
+      'SELECT id FROM job_cards WHERE id = $1',
+      [id]
+    );
+    if (jobExists.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: 'Job card not found.',
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT jca.id, jca.role, jca.assigned_at,
+              u.id AS mechanic_id,
+              u.first_name || ' ' || u.last_name AS mechanic_name,
+              u.phone,
+              u.specialization
+       FROM job_card_assignments jca
+       JOIN users u ON jca.mechanic_id = u.id
+       WHERE jca.job_id = $1
+       ORDER BY jca.assigned_at ASC`,
+      [id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      count: result.rows.length,
+      data: result.rows,
+    });
+  } catch (error) {
+    console.error('Get Job Mechanics Error:', error.message);
     return res.status(500).json({
       success: false,
       message: 'Server error. Please try again.',
@@ -437,7 +558,6 @@ const addPartsToJob = async (req, res) => {
       });
     }
 
-    // Check if job card exists
     const jobExists = await pool.query(
       'SELECT id FROM job_cards WHERE id = $1',
       [id]
@@ -449,7 +569,6 @@ const addPartsToJob = async (req, res) => {
       });
     }
 
-    // Check if part exists and has enough stock
     const partExists = await pool.query(
       'SELECT * FROM inventory WHERE id = $1',
       [part_id]
@@ -469,7 +588,6 @@ const addPartsToJob = async (req, res) => {
       });
     }
 
-    // Add part to job
     const result = await pool.query(
       `INSERT INTO job_parts (job_id, part_id, quantity_used, unit_price)
        VALUES ($1, $2, $3, $4)
@@ -477,7 +595,6 @@ const addPartsToJob = async (req, res) => {
       [id, part_id, quantity_used, part.unit_cost]
     );
 
-    // Deduct from inventory
     await pool.query(
       `UPDATE inventory
        SET quantity = quantity - $1, updated_at = NOW()
@@ -538,6 +655,8 @@ module.exports = {
   getJobCardById,
   updateJobStatus,
   assignMechanic,
+  removeMechanic,
+  getJobMechanics,
   addPartsToJob,
   deleteJobCard,
 };

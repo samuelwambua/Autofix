@@ -8,6 +8,8 @@ const {
   getJobCardById,
   updateJobStatus,
   assignMechanic,
+  removeMechanic,
+  getJobMechanics,
   addPartsToJob,
   deleteJobCard,
 } = require('../controllers/jobCardController');
@@ -28,7 +30,9 @@ router.get('/:id', getJobCardById);
 // ─── Staff Only Routes ────────────────────────────────────
 router.post('/', authorize('admin', 'supervisor', 'receptionist'), createJobCard);
 router.get('/', authorize('admin', 'supervisor', 'mechanic', 'receptionist'), getAllJobCards);
-router.put('/:id/assign-mechanic', authorize('admin', 'supervisor'), assignMechanic);
+router.get('/:id/mechanics', authorize('admin', 'supervisor', 'mechanic', 'receptionist'), getJobMechanics);
+router.post('/:id/assign-mechanic', authorize('admin', 'supervisor'), assignMechanic);
+router.delete('/:id/mechanics/:mechanicId', authorize('admin', 'supervisor'), removeMechanic);
 router.delete('/:id', authorize('admin'), deleteJobCard);
 
 module.exports = router;

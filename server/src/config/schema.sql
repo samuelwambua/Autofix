@@ -148,6 +148,20 @@ CREATE TABLE IF NOT EXISTS invoices (
 );
 
 
+
+-- ============================================================
+-- JOB CARD ASSIGNMENTS TABLE (Multiple mechanics per job)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS job_card_assignments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  job_id UUID NOT NULL REFERENCES job_cards(id) ON DELETE CASCADE,
+  mechanic_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role VARCHAR(150),
+  assigned_at TIMESTAMP DEFAULT NOW(),
+  UNIQUE(job_id, mechanic_id)
+);
+
+
 -- ============================================================
 -- NOTIFICATIONS TABLE
 -- ============================================================
@@ -188,3 +202,5 @@ CREATE INDEX IF NOT EXISTS idx_job_parts_job_id ON job_parts(job_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_client_id ON invoices(client_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_client_id ON notifications(client_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_job_assignments_job_id ON job_card_assignments(job_id);
+CREATE INDEX IF NOT EXISTS idx_job_assignments_mechanic_id ON job_card_assignments(mechanic_id);
