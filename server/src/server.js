@@ -17,6 +17,7 @@ const jobCardRoutes = require('./routes/jobCardRoutes');
 const inventoryRoutes = require('./routes/inventoryRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const invoiceRoutes = require('./routes/invoiceRoutes');
 
 // Connect to PostgreSQL
 connectDB();
@@ -48,6 +49,7 @@ app.use('/api/job-cards', jobCardRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/invoices', invoiceRoutes);
 
 // ─── 404 Handler ─────────────────────────────────────────
 app.use((req, res) => {
