@@ -3,31 +3,92 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, User, Phone, Wrench, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, User, Phone, Wrench, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { registerClientApi } from '../../api/authApi';
 import useAuthStore from '../../store/authStore';
 
+// ─── Password strength checker ────────────────────────────
+const getPasswordStrength = (password) => {
+  if (!password) return null;
+  let score = 0;
+  const checks = {
+    length:    password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number:    /[0-9]/.test(password),
+    special:   /[^A-Za-z0-9]/.test(password),
+  };
+  score = Object.values(checks).filter(Boolean).length;
+  if (score <= 2) return { label: 'Weak',   color: 'bg-red-500',    text: 'text-red-400',    width: 'w-1/4', score };
+  if (score === 3) return { label: 'Fair',   color: 'bg-amber-500',  text: 'text-amber-400',  width: 'w-2/4', score };
+  if (score === 4) return { label: 'Medium', color: 'bg-yellow-400', text: 'text-yellow-400', width: 'w-3/4', score };
+  return             { label: 'Strong',  color: 'bg-emerald-500', text: 'text-emerald-400', width: 'w-full', score };
+};
+
 // ─── Validation Schema ────────────────────────────────────
 const schema = z.object({
-  first_name: z.string().min(2, 'First name must be at least 2 characters.'),
-  last_name:  z.string().min(2, 'Last name must be at least 2 characters.'),
-  email:      z.string().email('Please enter a valid email address.'),
-  phone:      z.string().min(10, 'Please enter a valid phone number.'),
-  password:   z.string().min(6, 'Password must be at least 6 characters.'),
-  confirm_password: z.string(),
+  first_name: z
+    .string()
+    .min(2, 'First name must be at least 2 characters.')
+    .max(50, 'First name must not exceed 50 characters.')
+    .regex(/^[a-zA-Z\s'-]+$/, 'First name can only contain letters, spaces, hyphens and apostrophes.'),
+
+  last_name: z
+    .string()
+    .min(2, 'Last name must be at least 2 characters.')
+    .max(50, 'Last name must not exceed 50 characters.')
+    .regex(/^[a-zA-Z\s'-]+$/, 'Last name can only contain letters, spaces, hyphens and apostrophes.'),
+
+  email: z
+    .string()
+    .min(1, 'Email address is required.')
+    .email('Please enter a valid email address.')
+    .max(100, 'Email must not exceed 100 characters.'),
+
+  phone: z
+    .string()
+    .min(1, 'Phone number is required.')
+    .regex(
+      /^(\+254|0)[17]\d{8}$/,
+      'Please enter a valid Kenyan phone number (e.g. 0712345678 or +254712345678).'
+    ),
+
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters.')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter.')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter.')
+    .regex(/[0-9]/, 'Password must contain at least one number.')
+    .refine(
+      (val) => getPasswordStrength(val)?.score >= 3,
+      'Password is too weak. Use a mix of uppercase, lowercase, numbers and symbols.'
+    ),
+
+  confirm_password: z.string().min(1, 'Please confirm your password.'),
 }).refine((data) => data.password === data.confirm_password, {
   message: 'Passwords do not match.',
   path: ['confirm_password'],
 });
 
-// ─── Reusable field component ─────────────────────────────
+// ─── Password requirement row ─────────────────────────────
+const Requirement = ({ met, label }) => (
+  <div className="flex items-center gap-1.5">
+    {met
+      ? <CheckCircle size={12} className="text-emerald-400 flex-shrink-0" />
+      : <XCircle    size={12} className="text-white/30 flex-shrink-0" />
+    }
+    <span className={`text-xs ${met ? 'text-emerald-400' : 'text-white/30'}`}>{label}</span>
+  </div>
+);
+
+// ─── Field wrapper ────────────────────────────────────────
 const Field = ({ label, icon: Icon, error, children }) => (
   <div className="flex flex-col gap-1.5">
     <label className="text-white/70 text-sm font-medium">{label}</label>
     <div className="relative">
       {Icon && (
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 z-10">
+        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40 z-10 pointer-events-none">
           <Icon size={16} />
         </div>
       )}
@@ -48,9 +109,12 @@ const inputClass = (hasError, hasIcon = true) =>
 const Register = () => {
   const navigate = useNavigate();
   const { login } = useAuthStore();
-  const [loading, setLoading] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading]         = useState(false);
+  const [showPassword, setShowPassword]   = useState(false);
+  const [showConfirm, setShowConfirm]     = useState(false);
+  const [passwordValue, setPasswordValue] = useState('');
+
+  const strength = getPasswordStrength(passwordValue);
 
   const {
     register,
@@ -83,7 +147,7 @@ const Register = () => {
       <div className="absolute bottom-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full
         blur-3xl -translate-x-1/2 translate-y-1/2 pointer-events-none" />
 
-      <div className="w-full max-w-md relative z-10">
+      <div className="w-full max-w-md relative z-10 py-8">
 
         {/* ── Logo ─────────────────────────────────── */}
         <div className="text-center mb-8">
@@ -141,10 +205,11 @@ const Register = () => {
             <Field label="Phone Number" icon={Phone} error={errors.phone?.message}>
               <input
                 type="tel"
-                placeholder="07XX XXX XXX"
+                placeholder="0712 345 678"
                 {...register('phone')}
                 className={inputClass(!!errors.phone)}
               />
+              <p className="text-white/30 text-xs mt-1">Format: 0712345678 or +254712345678</p>
             </Field>
 
             {/* Password */}
@@ -152,7 +217,9 @@ const Register = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 placeholder="••••••••"
-                {...register('password')}
+                {...register('password', {
+                  onChange: (e) => setPasswordValue(e.target.value),
+                })}
                 className={`${inputClass(!!errors.password)} pr-10`}
               />
               <button
@@ -163,6 +230,29 @@ const Register = () => {
               >
                 {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
               </button>
+
+              {/* Password strength bar */}
+              {passwordValue && strength && (
+                <div className="mt-2 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-white/40">Password strength</span>
+                    <span className={`text-xs font-semibold ${strength.text}`}>
+                      {strength.label}
+                    </span>
+                  </div>
+                  <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${strength.color} ${strength.width}`} />
+                  </div>
+                  {/* Requirements checklist */}
+                  <div className="grid grid-cols-2 gap-1 pt-1">
+                    <Requirement met={passwordValue.length >= 8}          label="At least 8 characters" />
+                    <Requirement met={/[A-Z]/.test(passwordValue)}        label="One uppercase letter" />
+                    <Requirement met={/[a-z]/.test(passwordValue)}        label="One lowercase letter" />
+                    <Requirement met={/[0-9]/.test(passwordValue)}        label="One number" />
+                    <Requirement met={/[^A-Za-z0-9]/.test(passwordValue)} label="One special character" />
+                  </div>
+                </div>
+              )}
             </Field>
 
             {/* Confirm Password */}
@@ -186,7 +276,7 @@ const Register = () => {
             {/* Submit */}
             <button
               type="submit"
-              disabled={loading}
+              disabled={loading || (strength && strength.score < 3)}
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-500
                 hover:from-blue-600 hover:to-indigo-600
                 text-white font-semibold rounded-xl py-3 text-sm
@@ -207,7 +297,6 @@ const Register = () => {
             </button>
           </form>
 
-          {/* ── Login link ────────────────────────── */}
           <p className="text-center text-white/40 text-sm mt-6">
             Already have an account?{' '}
             <Link

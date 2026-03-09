@@ -3,17 +3,22 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Wrench, Eye, EyeOff } from 'lucide-react';
+import { Mail, Lock, Wrench, Eye, EyeOff, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loginApi } from '../../api/authApi';
 import useAuthStore from '../../store/authStore';
-import Button from '../../components/common/Button';
-import Input from '../../components/common/Input';
 
 // ─── Validation Schema ────────────────────────────────────
 const schema = z.object({
-  email: z.string().email('Please enter a valid email address.'),
-  password: z.string().min(6, 'Password must be at least 6 characters.'),
+  identifier: z
+    .string()
+    .min(1, 'Please enter your email or phone number.')
+    .refine((val) => {
+      const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val);
+      const isPhone = /^(\+254|0)[17]\d{8}$/.test(val.replace(/\s/g, ''));
+      return isEmail || isPhone;
+    }, 'Please enter a valid email address or phone number.'),
+  password: z.string().min(1, 'Please enter your password.'),
 });
 
 const Login = () => {
@@ -25,10 +30,18 @@ const Login = () => {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
   } = useForm({ resolver: zodResolver(schema) });
 
-  // ─── Redirect based on role ───────────────────────────
+  const identifierValue = watch('identifier', '');
+
+  // Determine if input looks like a phone or email
+  const getIdentifierType = (val) => {
+    if (/^(\+254|0)[17]\d/.test(val.replace(/\s/g, ''))) return 'phone';
+    return 'email';
+  };
+
   const redirectByRole = (role) => {
     const paths = {
       admin:        '/admin/dashboard',
@@ -40,11 +53,15 @@ const Login = () => {
     return paths[role] || '/';
   };
 
-  // ─── Submit Handler ───────────────────────────────────
   const onSubmit = async (data) => {
     try {
       setLoading(true);
-      const response = await loginApi(data);
+      const isPhone = /^(\+254|0)[17]\d{8}$/.test(data.identifier.replace(/\s/g, ''));
+      const payload = {
+        password: data.password,
+        ...(isPhone ? { phone: data.identifier } : { email: data.identifier }),
+      };
+      const response = await loginApi(payload);
       login(response.data.user, response.data.token);
       toast.success(`Welcome back, ${response.data.user.first_name}!`);
       navigate(redirectByRole(response.data.user.role));
@@ -59,7 +76,7 @@ const Login = () => {
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
       flex items-center justify-center p-4 relative overflow-hidden">
 
-      {/* ── Background decorative blobs ──────────────── */}
+      {/* ── Background blobs ──────────────────────── */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full
         blur-3xl -translate-x-1/2 -translate-y-1/2 pointer-events-none" />
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-600/20 rounded-full
@@ -69,7 +86,7 @@ const Login = () => {
 
       <div className="w-full max-w-md relative z-10">
 
-        {/* ── Logo & Title ─────────────────────────── */}
+        {/* ── Logo ─────────────────────────────────── */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center
             w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600
@@ -91,26 +108,31 @@ const Login = () => {
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* Email */}
+            {/* Email or Phone */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-white/70 text-sm font-medium">Email Address</label>
+              <label className="text-white/70 text-sm font-medium">
+                Email or Phone Number
+              </label>
               <div className="relative">
                 <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/40">
-                  <Mail size={16} />
+                  {getIdentifierType(identifierValue) === 'phone'
+                    ? <Phone size={16} />
+                    : <Mail size={16} />
+                  }
                 </div>
                 <input
-                  type="email"
-                  placeholder="you@example.com"
-                  {...register('email')}
+                  type="text"
+                  placeholder="email@example.com or 07XX XXX XXX"
+                  {...register('identifier')}
                   className={`w-full bg-white/10 border rounded-xl px-4 py-3 pl-10
                     text-white placeholder-white/30 text-sm
                     focus:outline-none focus:ring-2 focus:ring-blue-500/50
                     transition-all duration-200
-                    ${errors.email ? 'border-red-400/50' : 'border-white/20'}`}
+                    ${errors.identifier ? 'border-red-400/50' : 'border-white/20'}`}
                 />
               </div>
-              {errors.email && (
-                <p className="text-red-400 text-xs">{errors.email.message}</p>
+              {errors.identifier && (
+                <p className="text-red-400 text-xs">{errors.identifier.message}</p>
               )}
             </div>
 
@@ -169,7 +191,6 @@ const Login = () => {
             </button>
           </form>
 
-          {/* ── Register link ─────────────────────── */}
           <p className="text-center text-white/40 text-sm mt-6">
             Don't have an account?{' '}
             <Link
