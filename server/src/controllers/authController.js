@@ -125,7 +125,7 @@ const registerClient = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO clients (first_name, last_name, email, phone, password)
        VALUES ($1, $2, $3, $4, $5)
-       RETURNING id, first_name, last_name, email, phone, created_at`,
+       RETURNING id, first_name, last_name, email, phone, 'client' AS role, created_at`,
       [first_name, last_name, email || null, phone, hashedPassword]
     );
 
