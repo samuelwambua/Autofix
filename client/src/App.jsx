@@ -10,6 +10,8 @@ import Unauthorized from './pages/auth/Unauthorized';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StaffManagement from './pages/admin/StaffManagement';
 import ClientManagement from './pages/admin/ClientManagement';
+import VehicleManagement from './pages/admin/VehicleManagement';
+import AppointmentManagement from './pages/admin/AppointmentManagement';
 
 // ─── Placeholder pages (we'll build these next) ───────────
 const MechanicDashboard = () => (
@@ -28,6 +30,8 @@ const ClientDashboard = () => (
   </div>
 );
 
+const adminRoles = ['admin', 'supervisor'];
+
 function App() {
   return (
     <BrowserRouter>
@@ -38,36 +42,19 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Admin & Supervisor routes */}
-        <Route path="/admin/dashboard" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/supervisor/dashboard" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <AdminDashboard />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/staff" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <StaffManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/supervisor/staff" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <StaffManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/admin/clients" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <ClientManagement />
-          </ProtectedRoute>
-        } />
-        <Route path="/supervisor/clients" element={
-          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
-            <ClientManagement />
-          </ProtectedRoute>
-        } />
+        {['/admin', '/supervisor'].map((prefix) => (
+          [
+            { path: `${prefix}/dashboard`,    element: <AdminDashboard /> },
+            { path: `${prefix}/staff`,         element: <StaffManagement /> },
+            { path: `${prefix}/clients`,       element: <ClientManagement /> },
+            { path: `${prefix}/vehicles`,      element: <VehicleManagement /> },
+            { path: `${prefix}/appointments`,  element: <AppointmentManagement /> },
+          ].map(({ path, element }) => (
+            <Route key={path} path={path} element={
+              <ProtectedRoute allowedRoles={adminRoles}>{element}</ProtectedRoute>
+            } />
+          ))
+        ))}
 
         {/* Mechanic routes */}
         <Route path="/mechanic/dashboard" element={
