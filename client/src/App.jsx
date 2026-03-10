@@ -8,6 +8,8 @@ import Unauthorized from './pages/auth/Unauthorized';
 
 // ─── Admin Pages ──────────────────────────────────────────
 import AdminDashboard from './pages/admin/AdminDashboard';
+import StaffManagement from './pages/admin/StaffManagement';
+import ClientManagement from './pages/admin/ClientManagement';
 
 // ─── Placeholder pages (we'll build these next) ───────────
 const MechanicDashboard = () => (
@@ -21,7 +23,7 @@ const ReceptionistDashboard = () => (
   </div>
 );
 const ClientDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Client Dashboard 🚗</p>
   </div>
 );
@@ -44,6 +46,26 @@ function App() {
         <Route path="/supervisor/dashboard" element={
           <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
             <AdminDashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/staff" element={
+          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+            <StaffManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/supervisor/staff" element={
+          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+            <StaffManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/admin/clients" element={
+          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+            <ClientManagement />
+          </ProtectedRoute>
+        } />
+        <Route path="/supervisor/clients" element={
+          <ProtectedRoute allowedRoles={['admin', 'supervisor']}>
+            <ClientManagement />
           </ProtectedRoute>
         } />
 
