@@ -6,12 +6,10 @@ import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import Unauthorized from './pages/auth/Unauthorized';
 
-// ─── Placeholder dashboard pages (we'll build these next) ─
-const AdminDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
-    <p className="text-white text-2xl font-bold">Admin Dashboard 🚀</p>
-  </div>
-);
+// ─── Admin Pages ──────────────────────────────────────────
+import AdminDashboard from './pages/admin/AdminDashboard';
+
+// ─── Placeholder pages (we'll build these next) ───────────
 const MechanicDashboard = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Mechanic Dashboard 🔧</p>
@@ -23,7 +21,7 @@ const ReceptionistDashboard = () => (
   </div>
 );
 const ClientDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
+  <div className="min-h-screen bg-gradient-to-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Client Dashboard 🚗</p>
   </div>
 );
