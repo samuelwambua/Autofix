@@ -14,20 +14,25 @@ import VehicleManagement from './pages/admin/VehicleManagement';
 import AppointmentManagement from './pages/admin/AppointmentManagement';
 import JobCardManagement from './pages/admin/JobCardManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
+import InvoiceManagement from './pages/admin/InvoiceManagement';
+import ReviewManagement from './pages/admin/ReviewManagement';
 
-// ─── Placeholder pages (we'll build these next) ───────────
+// ─── Placeholder pages ────────────────────────────────────
 const MechanicDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
+    flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Mechanic Dashboard 🔧</p>
   </div>
 );
 const ReceptionistDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
+    flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Receptionist Dashboard 📋</p>
   </div>
 );
 const ClientDashboard = () => (
-  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900 flex items-center justify-center">
+  <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
+    flex items-center justify-center">
     <p className="text-white text-2xl font-bold">Client Dashboard 🚗</p>
   </div>
 );
@@ -53,6 +58,8 @@ function App() {
             { path: `${prefix}/appointments`, element: <AppointmentManagement /> },
             { path: `${prefix}/job-cards`,    element: <JobCardManagement /> },
             { path: `${prefix}/inventory`,    element: <InventoryManagement /> },
+            { path: `${prefix}/invoices`,     element: <InvoiceManagement /> },
+            { path: `${prefix}/reviews`,      element: <ReviewManagement /> },
           ].map(({ path, element }) => (
             <Route key={path} path={path} element={
               <ProtectedRoute allowedRoles={adminRoles}>{element}</ProtectedRoute>

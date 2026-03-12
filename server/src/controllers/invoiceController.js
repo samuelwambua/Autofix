@@ -3,11 +3,7 @@ const { pool } = require('../config/db');
 // ─── Create Invoice ───────────────────────────────────────
 const createInvoice = async (req, res) => {
   try {
-    const {
-      job_id,
-      labour_cost,
-      notes,
-    } = req.body;
+    const { job_id, labour_cost, notes } = req.body;
 
     if (!job_id || labour_cost === undefined) {
       return res.status(400).json({
@@ -16,7 +12,6 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Check if job card exists and is completed
     const jobExists = await pool.query(
       `SELECT jc.*, v.client_id
        FROM job_cards jc
@@ -40,7 +35,6 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Check if invoice already exists for this job
     const invoiceExists = await pool.query(
       'SELECT id FROM invoices WHERE job_id = $1',
       [job_id]
@@ -52,7 +46,6 @@ const createInvoice = async (req, res) => {
       });
     }
 
-    // Calculate parts cost from job_parts
     const partsResult = await pool.query(
       `SELECT COALESCE(SUM(quantity_used * unit_price), 0) AS parts_cost
        FROM job_parts
@@ -63,21 +56,12 @@ const createInvoice = async (req, res) => {
     const parts_cost = parseFloat(partsResult.rows[0].parts_cost);
     const total_amount = parseFloat(labour_cost) + parts_cost;
 
-    const paid_at = status === 'paid' ? new Date() : null;
-
     const result = await pool.query(
       `INSERT INTO invoices
         (job_id, client_id, labour_cost, parts_cost, total_amount, notes)
        VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [
-        job_id,
-        job.client_id,
-        labour_cost,
-        parts_cost,
-        total_amount,
-        notes || null,
-      ]
+      [job_id, job.client_id, labour_cost, parts_cost, total_amount, notes || null]
     );
 
     return res.status(201).json({
@@ -98,8 +82,6 @@ const createInvoice = async (req, res) => {
 // ─── Get All Invoices (Staff only) ───────────────────────
 const getAllInvoices = async (req, res) => {
   try {
-    const paid_at = status === 'paid' ? new Date() : null;
-
     const result = await pool.query(
       `SELECT i.*,
               c.first_name || ' ' || c.last_name AS client_name,
@@ -132,8 +114,6 @@ const getAllInvoices = async (req, res) => {
 // ─── Get My Invoices (Client only) ───────────────────────
 const getMyInvoices = async (req, res) => {
   try {
-    const paid_at = status === 'paid' ? new Date() : null;
-
     const result = await pool.query(
       `SELECT i.*,
               v.make || ' ' || v.model AS vehicle_name,
@@ -167,8 +147,6 @@ const getInvoiceById = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const paid_at = status === 'paid' ? new Date() : null;
-
     const result = await pool.query(
       `SELECT i.*,
               c.first_name || ' ' || c.last_name AS client_name,
@@ -196,18 +174,13 @@ const getInvoiceById = async (req, res) => {
       });
     }
 
-    // If client is requesting, make sure it's their invoice
-    if (
-      req.user.role === 'client' &&
-      result.rows[0].client_id !== req.user.id
-    ) {
+    if (req.user.role === 'client' && result.rows[0].client_id !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'Access denied. This invoice does not belong to you.',
       });
     }
 
-    // Get parts breakdown
     const partsResult = await pool.query(
       `SELECT jp.quantity_used, jp.unit_price,
               jp.quantity_used * jp.unit_price AS subtotal,
@@ -258,7 +231,6 @@ const recordPayment = async (req, res) => {
       });
     }
 
-    // Check if invoice exists
     const invoiceExists = await pool.query(
       'SELECT * FROM invoices WHERE id = $1',
       [id]
@@ -279,20 +251,21 @@ const recordPayment = async (req, res) => {
       });
     }
 
-    // Determine payment status
     const paid_amount = parseFloat(amount_paid);
     const total = parseFloat(invoice.total_amount);
-    let status;
 
-    if (paid_amount >= total) {
-      status = 'paid';
-    } else if (paid_amount > 0) {
-      status = 'partially_paid';
-    } else {
+    if (paid_amount <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Amount paid must be greater than 0.',
       });
+    }
+
+    let status;
+    if (paid_amount >= total) {
+      status = 'paid';
+    } else {
+      status = 'partially_paid';
     }
 
     const paid_at = status === 'paid' ? new Date() : null;
@@ -349,7 +322,6 @@ const updateInvoice = async (req, res) => {
       });
     }
 
-    // Recalculate total if labour cost changed
     let total_amount = parseFloat(invoiceExists.rows[0].total_amount);
     let new_labour_cost = parseFloat(invoiceExists.rows[0].labour_cost);
 
@@ -358,8 +330,6 @@ const updateInvoice = async (req, res) => {
       const parts_cost = parseFloat(invoiceExists.rows[0].parts_cost);
       total_amount = new_labour_cost + parts_cost;
     }
-
-    const paid_at = status === 'paid' ? new Date() : null;
 
     const result = await pool.query(
       `UPDATE invoices
