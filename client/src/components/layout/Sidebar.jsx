@@ -47,7 +47,7 @@ const navLinks = {
     { to: '/client/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
     { to: '/client/vehicles',     label: 'My Vehicles',  icon: Car },
     { to: '/client/appointments', label: 'Appointments', icon: Calendar },
-    { to: '/client/jobs',         label: 'My Jobs',      icon: ClipboardList },
+    { to: '/client/jobs',         label: 'Service History',      icon: ClipboardList },
     { to: '/client/invoices',     label: 'My Invoices',  icon: FileText },
     { to: '/client/reviews',      label: 'My Reviews',   icon: Star },
   ],
