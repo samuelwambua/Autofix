@@ -12,6 +12,8 @@ import StaffManagement from './pages/admin/StaffManagement';
 import ClientManagement from './pages/admin/ClientManagement';
 import VehicleManagement from './pages/admin/VehicleManagement';
 import AppointmentManagement from './pages/admin/AppointmentManagement';
+import JobCardManagement from './pages/admin/JobCardManagement';
+import InventoryManagement from './pages/admin/InventoryManagement';
 
 // ─── Placeholder pages (we'll build these next) ───────────
 const MechanicDashboard = () => (
@@ -42,19 +44,21 @@ function App() {
         <Route path="/unauthorized" element={<Unauthorized />} />
 
         {/* Admin & Supervisor routes */}
-        {['/admin', '/supervisor'].map((prefix) => (
+        {['/admin', '/supervisor'].map((prefix) =>
           [
             { path: `${prefix}/dashboard`,    element: <AdminDashboard /> },
-            { path: `${prefix}/staff`,         element: <StaffManagement /> },
-            { path: `${prefix}/clients`,       element: <ClientManagement /> },
-            { path: `${prefix}/vehicles`,      element: <VehicleManagement /> },
-            { path: `${prefix}/appointments`,  element: <AppointmentManagement /> },
+            { path: `${prefix}/staff`,        element: <StaffManagement /> },
+            { path: `${prefix}/clients`,      element: <ClientManagement /> },
+            { path: `${prefix}/vehicles`,     element: <VehicleManagement /> },
+            { path: `${prefix}/appointments`, element: <AppointmentManagement /> },
+            { path: `${prefix}/job-cards`,    element: <JobCardManagement /> },
+            { path: `${prefix}/inventory`,    element: <InventoryManagement /> },
           ].map(({ path, element }) => (
             <Route key={path} path={path} element={
               <ProtectedRoute allowedRoles={adminRoles}>{element}</ProtectedRoute>
             } />
           ))
-        ))}
+        )}
 
         {/* Mechanic routes */}
         <Route path="/mechanic/dashboard" element={
