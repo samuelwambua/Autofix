@@ -34,7 +34,7 @@ const navLinks = {
   ],
   [ROLES.MECHANIC]: [
     { to: '/mechanic/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/mechanic/my-jobs',   label: 'My Jobs',   icon: ClipboardList },
+    { to: '/mechanic/jobs',   label: 'My Jobs',   icon: ClipboardList },
   ],
   [ROLES.RECEPTIONIST]: [
     { to: '/receptionist/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
