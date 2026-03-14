@@ -5,16 +5,20 @@ const {
   getAllAppointments,
   getMyAppointments,
   getAppointmentsByMechanic,
+  getAppointmentsBySupervisor,
   getAppointmentById,
   updateAppointmentStatus,
   rescheduleAppointment,
   cancelAppointment,
   assignMechanic,
+  getActiveSupervisors,
 } = require('../controllers/appointmentController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
-// ─── All routes require login ─────────────────────────────
 router.use(protect);
+
+// ─── Public to all logged-in users ───────────────────────
+router.get('/supervisors', getActiveSupervisors);
 
 // ─── Client Routes ────────────────────────────────────────
 router.get('/my-appointments', getMyAppointments);
@@ -22,6 +26,9 @@ router.post('/', createAppointment);
 router.get('/:id', getAppointmentById);
 router.put('/:id/reschedule', rescheduleAppointment);
 router.put('/:id/cancel', cancelAppointment);
+
+// ─── Supervisor Routes ────────────────────────────────────
+router.get('/supervisor/my', authorize('supervisor'), getAppointmentsBySupervisor);
 
 // ─── Staff Only Routes ────────────────────────────────────
 router.get('/', authorize('admin', 'supervisor', 'receptionist', 'mechanic'), getAllAppointments);

@@ -1,14 +1,13 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCircle, Car, Calendar,
-  ClipboardList, Package, FileText, Star, Bell,
-  LogOut, Wrench, ChevronRight, Settings,
+  ClipboardList, Package, FileText, Star,
+  LogOut, Wrench, ChevronRight, Shield,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
 import { ROLES } from '../../utils/constants';
 import toast from 'react-hot-toast';
 
-// ─── Nav link definitions per role ───────────────────────
 const navLinks = {
   [ROLES.ADMIN]: [
     { to: '/admin/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
@@ -23,18 +22,17 @@ const navLinks = {
   ],
   [ROLES.SUPERVISOR]: [
     { to: '/supervisor/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-    { to: '/supervisor/staff',        label: 'Staff',        icon: Users },
-    { to: '/supervisor/clients',      label: 'Clients',      icon: UserCircle },
+    { to: '/supervisor/team',         label: 'My Team',      icon: Users },
+    { to: '/supervisor/clients',      label: 'My Clients',   icon: UserCircle },
     { to: '/supervisor/vehicles',     label: 'Vehicles',     icon: Car },
     { to: '/supervisor/appointments', label: 'Appointments', icon: Calendar },
     { to: '/supervisor/job-cards',    label: 'Job Cards',    icon: ClipboardList },
-    { to: '/supervisor/inventory',    label: 'Inventory',    icon: Package },
     { to: '/supervisor/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/supervisor/reviews',      label: 'Reviews',      icon: Star },
   ],
   [ROLES.MECHANIC]: [
     { to: '/mechanic/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { to: '/mechanic/jobs',   label: 'My Jobs',   icon: ClipboardList },
+    { to: '/mechanic/jobs',      label: 'My Jobs',   icon: ClipboardList },
   ],
   [ROLES.RECEPTIONIST]: [
     { to: '/receptionist/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
@@ -44,12 +42,12 @@ const navLinks = {
     { to: '/receptionist/invoices',     label: 'Invoices',     icon: FileText },
   ],
   [ROLES.CLIENT]: [
-    { to: '/client/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },
-    { to: '/client/vehicles',     label: 'My Vehicles',  icon: Car },
-    { to: '/client/appointments', label: 'Appointments', icon: Calendar },
-    { to: '/client/jobs',         label: 'Service History',      icon: ClipboardList },
-    { to: '/client/invoices',     label: 'My Invoices',  icon: FileText },
-    { to: '/client/reviews',      label: 'My Reviews',   icon: Star },
+    { to: '/client/dashboard',    label: 'Dashboard',       icon: LayoutDashboard },
+    { to: '/client/vehicles',     label: 'My Vehicles',     icon: Car },
+    { to: '/client/appointments', label: 'Appointments',    icon: Calendar },
+    { to: '/client/jobs',         label: 'Service History', icon: ClipboardList },
+    { to: '/client/invoices',     label: 'My Invoices',     icon: FileText },
+    { to: '/client/reviews',      label: 'My Reviews',      icon: Star },
   ],
 };
 
@@ -66,11 +64,8 @@ const Sidebar = () => {
 
   const getRoleLabel = (role) => {
     const labels = {
-      admin: 'Administrator',
-      supervisor: 'Supervisor',
-      mechanic: 'Mechanic',
-      receptionist: 'Receptionist',
-      client: 'Client',
+      admin: 'Administrator', supervisor: 'Supervisor',
+      mechanic: 'Mechanic', receptionist: 'Receptionist', client: 'Client',
     };
     return labels[role] || role;
   };
@@ -90,7 +85,7 @@ const Sidebar = () => {
     <aside className="fixed top-0 left-0 h-screen w-64 z-40 flex flex-col
       bg-white/5 backdrop-blur-xl border-r border-white/10 shadow-2xl">
 
-      {/* ── Logo ─────────────────────────────────── */}
+      {/* Logo */}
       <div className="px-6 py-6 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="bg-gradient-to-br from-blue-500 to-indigo-600
@@ -104,7 +99,7 @@ const Sidebar = () => {
         </div>
       </div>
 
-      {/* ── User Profile ──────────────────────────── */}
+      {/* User Profile */}
       <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-3 bg-white/5 rounded-xl p-3">
           <div className={`bg-gradient-to-br ${getRoleColor(user?.role)}
@@ -116,14 +111,15 @@ const Sidebar = () => {
             <p className="text-white font-semibold text-sm truncate">
               {user?.first_name} {user?.last_name}
             </p>
-            <p className="text-white/40 text-xs truncate">
+            <p className="text-white/40 text-xs truncate flex items-center gap-1">
+              {user?.role === 'supervisor' && <Shield size={10} className="text-purple-400" />}
               {getRoleLabel(user?.role)}
             </p>
           </div>
         </div>
       </div>
 
-      {/* ── Navigation Links ──────────────────────── */}
+      {/* Navigation Links */}
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
         {links.map(({ to, label, icon: Icon }) => (
           <NavLink
@@ -149,8 +145,8 @@ const Sidebar = () => {
         ))}
       </nav>
 
-      {/* ── Bottom Actions ────────────────────────── */}
-      <div className="px-3 py-4 border-t border-white/10 space-y-1">
+      {/* Bottom Actions */}
+      <div className="px-3 py-4 border-t border-white/10">
         <button
           onClick={handleLogout}
           className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl

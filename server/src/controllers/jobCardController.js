@@ -56,15 +56,31 @@ const createJobCard = async (req, res) => {
       }
     }
 
+    // Auto-assign supervisor_id if creator is a supervisor
+    const supervisor_id = req.user.role === 'supervisor' ? req.user.id : null;
+
+    // If mechanic assigned, find their supervisor automatically
+    let resolvedSupervisorId = supervisor_id;
+    if (!resolvedSupervisorId && mechanic_id) {
+      const mechSupervisor = await pool.query(
+        'SELECT supervisor_id FROM users WHERE id = $1',
+        [mechanic_id]
+      );
+      if (mechSupervisor.rows[0]?.supervisor_id) {
+        resolvedSupervisorId = mechSupervisor.rows[0].supervisor_id;
+      }
+    }
+
     const result = await pool.query(
       `INSERT INTO job_cards
-        (appointment_id, vehicle_id, mechanic_id, description, estimated_completion, notes)
-       VALUES ($1, $2, $3, $4, $5, $6)
+        (appointment_id, vehicle_id, mechanic_id, supervisor_id, description, estimated_completion, notes)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING *`,
       [
         appointment_id || null,
         vehicle_id,
         mechanic_id || null,
+        resolvedSupervisorId,
         description,
         estimated_completion || null,
         notes || null,
@@ -73,7 +89,6 @@ const createJobCard = async (req, res) => {
 
     const jobCard = result.rows[0];
 
-    // If a primary mechanic is provided, add them to assignments table too
     if (mechanic_id) {
       await pool.query(
         `INSERT INTO job_card_assignments (job_id, mechanic_id, role)
@@ -82,7 +97,6 @@ const createJobCard = async (req, res) => {
       );
     }
 
-    // If linked to appointment, update appointment status to confirmed
     if (appointment_id) {
       await pool.query(
         `UPDATE appointments SET status = 'confirmed', updated_at = NOW() WHERE id = $1`,
@@ -105,7 +119,7 @@ const createJobCard = async (req, res) => {
 };
 
 
-// ─── Get All Job Cards (Staff only) ──────────────────────
+// ─── Get All Job Cards (Admin only) ──────────────────────
 const getAllJobCards = async (req, res) => {
   try {
     const result = await pool.query(
@@ -114,11 +128,13 @@ const getAllJobCards = async (req, res) => {
               v.plate_number,
               c.first_name || ' ' || c.last_name AS client_name,
               c.phone AS client_phone,
-              u.first_name || ' ' || u.last_name AS mechanic_name
+              u.first_name || ' ' || u.last_name AS mechanic_name,
+              s.first_name || ' ' || s.last_name AS supervisor_name
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
        LEFT JOIN users u ON jc.mechanic_id = u.id
+       LEFT JOIN users s ON jc.supervisor_id = s.id
        ORDER BY jc.created_at DESC`
     );
 
@@ -145,10 +161,12 @@ const getMyJobCards = async (req, res) => {
               v.make || ' ' || v.model AS vehicle_name,
               v.plate_number,
               c.first_name || ' ' || c.last_name AS client_name,
-              c.phone AS client_phone
+              c.phone AS client_phone,
+              s.first_name || ' ' || s.last_name AS supervisor_name
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
+       LEFT JOIN users s ON jc.supervisor_id = s.id
        LEFT JOIN job_card_assignments jca ON jc.id = jca.job_id
        WHERE jc.mechanic_id = $1 OR jca.mechanic_id = $1
        ORDER BY jc.created_at DESC`,
@@ -201,9 +219,11 @@ const getJobCardsByVehicle = async (req, res) => {
 
     const result = await pool.query(
       `SELECT jc.*,
-              u.first_name || ' ' || u.last_name AS mechanic_name
+              u.first_name || ' ' || u.last_name AS mechanic_name,
+              s.first_name || ' ' || s.last_name AS supervisor_name
        FROM job_cards jc
        LEFT JOIN users u ON jc.mechanic_id = u.id
+       LEFT JOIN users s ON jc.supervisor_id = s.id
        WHERE jc.vehicle_id = $1
        ORDER BY jc.created_at DESC`,
       [vehicleId]
@@ -240,11 +260,13 @@ const getJobCardById = async (req, res) => {
               c.phone AS client_phone,
               c.email AS client_email,
               u.first_name || ' ' || u.last_name AS mechanic_name,
-              u.specialization AS mechanic_specialization
+              u.specialization AS mechanic_specialization,
+              s.first_name || ' ' || s.last_name AS supervisor_name
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
        LEFT JOIN users u ON jc.mechanic_id = u.id
+       LEFT JOIN users s ON jc.supervisor_id = s.id
        WHERE jc.id = $1`,
       [id]
     );
@@ -266,7 +288,6 @@ const getJobCardById = async (req, res) => {
       });
     }
 
-    // Get all assigned mechanics
     const mechanicsResult = await pool.query(
       `SELECT jca.id, jca.role, jca.assigned_at,
               u.id AS mechanic_id,
@@ -278,7 +299,6 @@ const getJobCardById = async (req, res) => {
       [id]
     );
 
-    // Get parts used in this job
     const partsResult = await pool.query(
       `SELECT jp.*,
               i.name AS part_name,
@@ -314,12 +334,8 @@ const updateJobStatus = async (req, res) => {
     const { status, notes, estimated_completion } = req.body;
 
     const validStatuses = [
-      'received',
-      'diagnosing',
-      'awaiting_parts',
-      'in_progress',
-      'quality_check',
-      'completed',
+      'received', 'diagnosing', 'awaiting_parts',
+      'in_progress', 'quality_check', 'completed',
     ];
 
     if (!status || !validStatuses.includes(status)) {
@@ -340,11 +356,10 @@ const updateJobStatus = async (req, res) => {
       });
     }
 
-    // If mechanic is updating, make sure they are assigned to this job
+    // Mechanic must be assigned to the job
     if (req.user.role === 'mechanic') {
       const isAssigned = await pool.query(
-        `SELECT id FROM job_card_assignments
-         WHERE job_id = $1 AND mechanic_id = $2`,
+        `SELECT id FROM job_card_assignments WHERE job_id = $1 AND mechanic_id = $2`,
         [id, req.user.id]
       );
       if (
@@ -356,6 +371,14 @@ const updateJobStatus = async (req, res) => {
           message: 'Access denied. You are not assigned to this job.',
         });
       }
+    }
+
+    // Supervisor can only update their own jobs
+    if (req.user.role === 'supervisor' && jobExists.rows[0].supervisor_id !== req.user.id) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. This job is not under your supervision.',
+      });
     }
 
     const actual_completion = status === 'completed' ? new Date() : null;
@@ -401,7 +424,7 @@ const assignMechanic = async (req, res) => {
     }
 
     const jobExists = await pool.query(
-      'SELECT id FROM job_cards WHERE id = $1',
+      'SELECT * FROM job_cards WHERE id = $1',
       [id]
     );
     if (jobExists.rows.length === 0) {
@@ -409,6 +432,26 @@ const assignMechanic = async (req, res) => {
         success: false,
         message: 'Job card not found.',
       });
+    }
+
+    // Supervisor can only assign mechanics from their own team
+    if (req.user.role === 'supervisor') {
+      if (jobExists.rows[0].supervisor_id !== req.user.id) {
+        return res.status(403).json({
+          success: false,
+          message: 'Access denied. This job is not under your supervision.',
+        });
+      }
+      const onTeam = await pool.query(
+        'SELECT id FROM users WHERE id = $1 AND supervisor_id = $2 AND role = $3',
+        [mechanic_id, req.user.id, 'mechanic']
+      );
+      if (onTeam.rows.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'You can only assign mechanics from your own team.',
+        });
+      }
     }
 
     const mechanicExists = await pool.query(
@@ -422,7 +465,6 @@ const assignMechanic = async (req, res) => {
       });
     }
 
-    // Check if mechanic is already assigned to this job
     const alreadyAssigned = await pool.query(
       'SELECT id FROM job_card_assignments WHERE job_id = $1 AND mechanic_id = $2',
       [id, mechanic_id]
@@ -434,14 +476,12 @@ const assignMechanic = async (req, res) => {
       });
     }
 
-    // Add to assignments table
     await pool.query(
       `INSERT INTO job_card_assignments (job_id, mechanic_id, role)
        VALUES ($1, $2, $3)`,
       [id, mechanic_id, role || 'Mechanic']
     );
 
-    // Get all assigned mechanics for this job
     const allAssigned = await pool.query(
       `SELECT jca.id, jca.role, jca.assigned_at,
               u.id AS mechanic_id,
@@ -507,8 +547,7 @@ const getJobMechanics = async (req, res) => {
     const { id } = req.params;
 
     const jobExists = await pool.query(
-      'SELECT id FROM job_cards WHERE id = $1',
-      [id]
+      'SELECT id FROM job_cards WHERE id = $1', [id]
     );
     if (jobExists.rows.length === 0) {
       return res.status(404).json({
@@ -559,8 +598,7 @@ const addPartsToJob = async (req, res) => {
     }
 
     const jobExists = await pool.query(
-      'SELECT id FROM job_cards WHERE id = $1',
-      [id]
+      'SELECT id FROM job_cards WHERE id = $1', [id]
     );
     if (jobExists.rows.length === 0) {
       return res.status(404).json({
@@ -570,8 +608,7 @@ const addPartsToJob = async (req, res) => {
     }
 
     const partExists = await pool.query(
-      'SELECT * FROM inventory WHERE id = $1',
-      [part_id]
+      'SELECT * FROM inventory WHERE id = $1', [part_id]
     );
     if (partExists.rows.length === 0) {
       return res.status(404).json({
@@ -596,9 +633,7 @@ const addPartsToJob = async (req, res) => {
     );
 
     await pool.query(
-      `UPDATE inventory
-       SET quantity = quantity - $1, updated_at = NOW()
-       WHERE id = $2`,
+      `UPDATE inventory SET quantity = quantity - $1, updated_at = NOW() WHERE id = $2`,
       [quantity_used, part_id]
     );
 

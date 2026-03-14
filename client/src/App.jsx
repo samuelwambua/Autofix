@@ -18,6 +18,15 @@ import ReviewManagement from './pages/admin/ReviewManagement';
 import MechanicDashboard from './pages/mechanic/MechanicDashboard';
 import MyJobs from './pages/mechanic/MyJobs';
 
+import SupervisorDashboard from './pages/supervisor/SupervisorDashboard';
+import TeamManagement from './pages/supervisor/TeamManagement';
+import SupervisorClients from './pages/supervisor/SupervisorClients';
+import SupervisorVehicles from './pages/supervisor/SupervisorVehicles';
+import SupervisorAppointments from './pages/supervisor/SupervisorAppointments';
+import SupervisorJobCards from './pages/supervisor/SupervisorJobCards';
+import SupervisorInvoices from './pages/supervisor/SupervisorInvoices';
+import SupervisorReviews from './pages/supervisor/SupervisorReviews';
+
 import ClientDashboard from './pages/client/ClientDashboard';
 import MyVehicles from './pages/client/MyVehicles';
 import MyAppointments from './pages/client/MyAppointments';
@@ -32,34 +41,49 @@ const ReceptionistDashboard = () => (
   </div>
 );
 
-const adminRoles = ['admin', 'supervisor'];
-
 function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public */}
         <Route path="/login"        element={<Login />} />
         <Route path="/register"     element={<Register />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
 
-        {['/admin', '/supervisor'].map((prefix) =>
-          [
-            { path: `${prefix}/dashboard`,    element: <AdminDashboard /> },
-            { path: `${prefix}/staff`,        element: <StaffManagement /> },
-            { path: `${prefix}/clients`,      element: <ClientManagement /> },
-            { path: `${prefix}/vehicles`,     element: <VehicleManagement /> },
-            { path: `${prefix}/appointments`, element: <AppointmentManagement /> },
-            { path: `${prefix}/job-cards`,    element: <JobCardManagement /> },
-            { path: `${prefix}/inventory`,    element: <InventoryManagement /> },
-            { path: `${prefix}/invoices`,     element: <InvoiceManagement /> },
-            { path: `${prefix}/reviews`,      element: <ReviewManagement /> },
-          ].map(({ path, element }) => (
-            <Route key={path} path={path} element={
-              <ProtectedRoute allowedRoles={adminRoles}>{element}</ProtectedRoute>
-            } />
-          ))
-        )}
+        {/* Admin */}
+        {[
+          { path: '/admin/dashboard',    el: <AdminDashboard /> },
+          { path: '/admin/staff',        el: <StaffManagement /> },
+          { path: '/admin/clients',      el: <ClientManagement /> },
+          { path: '/admin/vehicles',     el: <VehicleManagement /> },
+          { path: '/admin/appointments', el: <AppointmentManagement /> },
+          { path: '/admin/job-cards',    el: <JobCardManagement /> },
+          { path: '/admin/inventory',    el: <InventoryManagement /> },
+          { path: '/admin/invoices',     el: <InvoiceManagement /> },
+          { path: '/admin/reviews',      el: <ReviewManagement /> },
+        ].map(({ path, el }) => (
+          <Route key={path} path={path} element={
+            <ProtectedRoute allowedRoles={['admin']}>{el}</ProtectedRoute>
+          } />
+        ))}
 
+        {/* Supervisor */}
+        {[
+          { path: '/supervisor/dashboard',    el: <SupervisorDashboard /> },
+          { path: '/supervisor/team',         el: <TeamManagement /> },
+          { path: '/supervisor/clients',      el: <SupervisorClients /> },
+          { path: '/supervisor/vehicles',     el: <SupervisorVehicles /> },
+          { path: '/supervisor/appointments', el: <SupervisorAppointments /> },
+          { path: '/supervisor/job-cards',    el: <SupervisorJobCards /> },
+          { path: '/supervisor/invoices',     el: <SupervisorInvoices /> },
+          { path: '/supervisor/reviews',      el: <SupervisorReviews /> },
+        ].map(({ path, el }) => (
+          <Route key={path} path={path} element={
+            <ProtectedRoute allowedRoles={['supervisor']}>{el}</ProtectedRoute>
+          } />
+        ))}
+
+        {/* Mechanic */}
         <Route path="/mechanic/dashboard" element={
           <ProtectedRoute allowedRoles={['mechanic']}><MechanicDashboard /></ProtectedRoute>
         } />
@@ -67,6 +91,7 @@ function App() {
           <ProtectedRoute allowedRoles={['mechanic']}><MyJobs /></ProtectedRoute>
         } />
 
+        {/* Client */}
         <Route path="/client/dashboard"    element={<ProtectedRoute allowedRoles={['client']}><ClientDashboard /></ProtectedRoute>} />
         <Route path="/client/vehicles"     element={<ProtectedRoute allowedRoles={['client']}><MyVehicles /></ProtectedRoute>} />
         <Route path="/client/appointments" element={<ProtectedRoute allowedRoles={['client']}><MyAppointments /></ProtectedRoute>} />
@@ -74,6 +99,7 @@ function App() {
         <Route path="/client/invoices"     element={<ProtectedRoute allowedRoles={['client']}><MyInvoices /></ProtectedRoute>} />
         <Route path="/client/reviews"      element={<ProtectedRoute allowedRoles={['client']}><MyReviews /></ProtectedRoute>} />
 
+        {/* Receptionist */}
         <Route path="/receptionist/dashboard" element={
           <ProtectedRoute allowedRoles={['receptionist']}><ReceptionistDashboard /></ProtectedRoute>
         } />

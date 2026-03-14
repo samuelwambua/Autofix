@@ -11,37 +11,23 @@ import GlassCard from '../../components/common/GlassCard';
 import Spinner from '../../components/common/Spinner';
 import Modal from '../../components/common/Modal';
 
-const fetchMyReviews = async () => {
-  const res = await axiosInstance.get('/reviews/my-reviews');
-  return res.data;
-};
-const fetchMyInvoices = async () => {
-  const res = await axiosInstance.get('/invoices/my-invoices');
-  return res.data;
-};
+const fetchMyReviews  = () => axiosInstance.get('/reviews/my-reviews').then(r => r.data);
+const fetchMyInvoices = () => axiosInstance.get('/invoices/my-invoices').then(r => r.data);
 
 const reviewSchema = z.object({
-  invoice_id: z.string().min(1, 'Please select a service.'),
-  rating:     z.coerce.number().min(1).max(5),
-  comment:    z.string().optional(),
+  job_id:  z.string().min(1, 'Please select a service.'),
+  rating:  z.coerce.number().min(1).max(5),
+  comment: z.string().optional(),
 });
 
 const StarPicker = ({ value, onChange }) => (
   <div className="flex items-center gap-2">
     {[1, 2, 3, 4, 5].map((star) => (
-      <button
-        key={star}
-        type="button"
-        onClick={() => onChange(star)}
-        className="transition-transform hover:scale-110"
-      >
-        <Star
-          size={28}
-          className={star <= value
-            ? 'text-amber-400 fill-amber-400'
-            : 'text-white/20 hover:text-amber-300'
-          }
-        />
+      <button key={star} type="button" onClick={() => onChange(star)}
+        className="transition-transform hover:scale-110">
+        <Star size={28} className={star <= value
+          ? 'text-amber-400 fill-amber-400'
+          : 'text-white/20 hover:text-amber-300'} />
       </button>
     ))}
     <span className="text-white/50 text-sm ml-2">{value}/5</span>
@@ -51,11 +37,8 @@ const StarPicker = ({ value, onChange }) => (
 const StarDisplay = ({ rating }) => (
   <div className="flex items-center gap-0.5">
     {[1, 2, 3, 4, 5].map((star) => (
-      <Star
-        key={star}
-        size={14}
-        className={star <= rating ? 'text-amber-400 fill-amber-400' : 'text-white/20'}
-      />
+      <Star key={star} size={14}
+        className={star <= rating ? 'text-amber-400 fill-amber-400' : 'text-white/20'} />
     ))}
   </div>
 );
@@ -63,17 +46,17 @@ const StarDisplay = ({ rating }) => (
 const inputClass = (hasError) =>
   `w-full bg-white/10 border rounded-xl px-4 py-2.5 text-white
    placeholder-white/30 text-sm focus:outline-none focus:ring-2
-   focus:ring-blue-500/50 transition-all duration-200
+   focus:ring-blue-500/50 transition-all
    ${hasError ? 'border-red-400/50' : 'border-white/20'}`;
 
 const MyReviews = () => {
   const queryClient = useQueryClient();
-  const [showCreate, setShowCreate]   = useState(false);
+  const [showCreate, setShowCreate]       = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
-  const [starValue, setStarValue]     = useState(5);
+  const [starValue, setStarValue]         = useState(5);
 
-  const { data, isLoading } = useQuery({ queryKey: ['myReviews'],  queryFn: fetchMyReviews });
-  const { data: invoicesData } = useQuery({ queryKey: ['myInvoices'], queryFn: fetchMyInvoices });
+  const { data, isLoading }        = useQuery({ queryKey: ['myReviews'],  queryFn: fetchMyReviews });
+  const { data: invoicesData }     = useQuery({ queryKey: ['myInvoices'], queryFn: fetchMyInvoices });
 
   const createMutation = useMutation({
     mutationFn: (data) => axiosInstance.post('/reviews', data).then(r => r.data),
@@ -108,9 +91,8 @@ const MyReviews = () => {
   const onSubmit = (data) => createMutation.mutate(data);
 
   const reviews  = data?.data || [];
-  const invoices = invoicesData?.data || [];
-  // Only paid invoices can be reviewed
-  const reviewableInvoices = invoices.filter(i => i.status === 'paid');
+  // Only paid invoices can be reviewed — use job_id (not invoice_id) for submission
+  const reviewableInvoices = (invoicesData?.data || []).filter(i => i.status === 'paid');
 
   return (
     <PageWrapper title="My Reviews" subtitle="Share your feedback on our services.">
@@ -125,8 +107,7 @@ const MyReviews = () => {
             onClick={() => { setShowCreate(true); reset(); setStarValue(5); }}
             className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-500
               hover:from-amber-600 hover:to-orange-600 text-white font-semibold
-              rounded-xl px-4 py-2 text-sm shadow-lg shadow-amber-500/30
-              transition-all whitespace-nowrap"
+              rounded-xl px-4 py-2 text-sm shadow-lg shadow-amber-500/30 transition-all"
           >
             <Plus size={16} /> Write a Review
           </button>
@@ -157,11 +138,9 @@ const MyReviews = () => {
             <GlassCard key={r.id} className="p-5">
               <div className="flex items-start justify-between mb-3">
                 <StarDisplay rating={r.rating} />
-                <button
-                  onClick={() => setConfirmDelete(r)}
+                <button onClick={() => setConfirmDelete(r)}
                   className="p-1.5 rounded-lg text-white/20 hover:text-red-400
-                    hover:bg-red-500/10 transition-all"
-                >
+                    hover:bg-red-500/10 transition-all">
                   <Trash2 size={14} />
                 </button>
               </div>
@@ -188,37 +167,41 @@ const MyReviews = () => {
         size="md"
       >
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+
+          {/* Hidden rating field — controlled by StarPicker */}
+          <input type="hidden" {...register('rating')} />
+
           <div className="flex flex-col gap-1.5">
             <label className="text-white/70 text-sm font-medium">Select Service</label>
-            <select {...register('invoice_id')} className={inputClass(!!errors.invoice_id)}>
+            {/* ⚠️ Send job_id — backend expects job_id not invoice_id */}
+            <select {...register('job_id')} className={inputClass(!!errors.job_id)}>
               <option value="" className="bg-slate-800">Select a completed service...</option>
               {reviewableInvoices.map((inv) => (
-                <option key={inv.id} value={inv.id} className="bg-slate-800">
+                <option key={inv.id} value={inv.job_id} className="bg-slate-800">
                   {inv.job_description} — {inv.vehicle_name}
                 </option>
               ))}
             </select>
-            {errors.invoice_id && <p className="text-red-400 text-xs">{errors.invoice_id.message}</p>}
+            {errors.job_id && <p className="text-red-400 text-xs">{errors.job_id.message}</p>}
             {reviewableInvoices.length === 0 && (
               <p className="text-white/30 text-xs mt-1">
                 No paid services available to review yet.
               </p>
             )}
           </div>
+
           <div className="flex flex-col gap-2">
             <label className="text-white/70 text-sm font-medium">Your Rating</label>
-            <input type="hidden" {...register('rating')} />
             <StarPicker value={starValue} onChange={handleStarChange} />
           </div>
+
           <div className="flex flex-col gap-1.5">
             <label className="text-white/70 text-sm font-medium">Comment (optional)</label>
-            <textarea
-              rows={3}
-              placeholder="Tell us about your experience..."
+            <textarea rows={3} placeholder="Tell us about your experience..."
               {...register('comment')}
-              className={`${inputClass(false)} resize-none`}
-            />
+              className={`${inputClass(false)} resize-none`} />
           </div>
+
           <div className="flex gap-3 pt-2">
             <button type="button"
               onClick={() => { setShowCreate(false); reset(); setStarValue(5); }}
@@ -231,7 +214,7 @@ const MyReviews = () => {
                 text-white font-semibold rounded-xl py-2.5 text-sm
                 transition-all disabled:opacity-50 flex items-center justify-center gap-2">
               {createMutation.isPending
-                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Submitting...</>
+                ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Submitting...</>
                 : 'Submit Review'
               }
             </button>
@@ -260,7 +243,7 @@ const MyReviews = () => {
                   text-white font-semibold rounded-xl py-2.5 text-sm
                   transition-all disabled:opacity-50 flex items-center justify-center gap-2">
                 {deleteMutation.isPending
-                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Deleting...</>
+                  ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Deleting...</>
                   : 'Delete'
                 }
               </button>
