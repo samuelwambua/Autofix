@@ -51,7 +51,7 @@ const MyInvoices = () => {
     <PageWrapper title="My Invoices" subtitle="View all your service invoices and payment history.">
 
       {/* ── Summary Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard title="Total Invoices" value={invoices.length}                    icon={FileText}    color="blue" />
         <StatCard title="Total Paid"     value={formatCurrency(totalSpent)}         icon={CheckCircle} color="emerald" />
         <StatCard title="Outstanding"    value={formatCurrency(totalPending)}       icon={Clock}       color={totalPending > 0 ? 'rose' : 'emerald'} />

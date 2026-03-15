@@ -120,7 +120,7 @@ const AdminDashboard = () => {
       subtitle="Welcome back! Here's what's happening at AutoFix today."
     >
       {/* ── Stat Cards Row ───────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total Clients"
           value={counts.total_clients}
@@ -147,7 +147,7 @@ const AdminDashboard = () => {
         />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
           title="Total Jobs"
           value={counts.total_jobs}
@@ -175,7 +175,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Revenue Chart + Billing Summary ──────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
         {/* Revenue chart */}
         <GlassCard className="lg:col-span-2 p-6">
@@ -241,7 +241,7 @@ const AdminDashboard = () => {
               </span>
             </div>
             <div className="h-px bg-white/10 my-2" />
-            <div className="grid grid-cols-3 gap-2 mt-2">
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mt-2">
               <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3 text-center">
                 <p className="text-emerald-400 font-bold text-lg">{billing_stats.paid_invoices}</p>
                 <p className="text-white/40 text-xs mt-0.5">Paid</p>
@@ -326,7 +326,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* ── Recent Jobs + Top Mechanics ───────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
 
         {/* Recent Jobs */}
         <GlassCard className="lg:col-span-2 p-6">

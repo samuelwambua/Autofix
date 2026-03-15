@@ -9,19 +9,20 @@ const StatCard = ({ title, value, icon: Icon, color = 'blue', trend, suffix = ''
   };
 
   return (
-    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-5">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-white/60 text-sm font-medium">{title}</p>
+    <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl shadow-xl p-4 sm:p-5">
+      <div className="flex items-center justify-between mb-3 sm:mb-4">
+        <p className="text-white/60 text-xs sm:text-sm font-medium leading-tight">{title}</p>
         {Icon && (
-          <div className={`bg-gradient-to-br ${colors[color]} p-2.5 rounded-xl shadow-lg`}>
-            <Icon size={18} className="text-white" />
+          <div className={`bg-gradient-to-br ${colors[color]} p-2 sm:p-2.5 rounded-xl shadow-lg flex-shrink-0`}>
+            <Icon size={16} className="text-white sm:hidden" />
+            <Icon size={18} className="text-white hidden sm:block" />
           </div>
         )}
       </div>
       <div className="flex items-end gap-2">
-        <h3 className="text-3xl font-bold text-white">
+        <h3 className="text-xl sm:text-3xl font-bold text-white truncate">
           {value}
-          {suffix && <span className="text-lg font-medium text-white/60 ml-1">{suffix}</span>}
+          {suffix && <span className="text-sm sm:text-lg font-medium text-white/60 ml-1">{suffix}</span>}
         </h3>
       </div>
       {trend && (

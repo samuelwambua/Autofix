@@ -154,7 +154,7 @@ const InvoiceManagement = () => {
     <PageWrapper title="Invoices" subtitle="Manage all client invoices and payments.">
 
       {/* ── Summary Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Invoices" value={summary.total_invoices || 0}          icon={FileText}    color="blue" />
         <StatCard title="Total Billed"   value={formatCurrency(summary.total_billed)} icon={TrendingUp}  color="purple" />
         <StatCard title="Collected"      value={formatCurrency(summary.total_collected)} icon={CheckCircle} color="emerald" />

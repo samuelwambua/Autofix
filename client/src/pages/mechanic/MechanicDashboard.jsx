@@ -65,7 +65,7 @@ const MechanicDashboard = () => {
       subtitle={user?.specialization || 'Mechanic Dashboard'}
     >
       {/* ── Stat Cards ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Active Jobs"    value={activeJobs.length} icon={Wrench}      color="blue" />
         <StatCard title="Completed Jobs" value={completedJobs}     icon={CheckCircle} color="emerald" />
         <StatCard title="Avg Rating"     value={avgRating}         icon={Star}        color="amber" />
@@ -191,7 +191,7 @@ const MechanicDashboard = () => {
           <p className="text-white/50 text-xs font-semibold uppercase tracking-wider mb-4">
             My Performance
           </p>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col items-center justify-center p-4
               bg-white/5 rounded-xl border border-white/10 text-center">
               <TrendingUp size={20} className="text-blue-400 mb-2" />

@@ -65,7 +65,7 @@ const SupervisorDashboard = () => {
       subtitle="Here's your team and operations overview."
     >
       {/* ── Stat Cards ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Team Members"   value={team.length}                                        icon={Users}         color="blue" />
         <StatCard title="My Clients"     value={d.total_clients || 0}                               icon={UserCircle}    color="purple" />
         <StatCard title="Active Jobs"    value={activeCount}                                        icon={ClipboardList} color="amber" />

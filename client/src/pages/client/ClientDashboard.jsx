@@ -65,7 +65,7 @@ const ClientDashboard = () => {
       subtitle="Here's an overview of your vehicles and services."
     >
       {/* ── Stat Cards ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="My Vehicles"     value={vehicles.length}                          icon={Car}       color="blue" />
         <StatCard title="Appointments"    value={confirmedCount}                           icon={Calendar}  color="emerald" />
         <StatCard title="Total Spent"     value={`KES ${totalSpent.toLocaleString()}`}     icon={TrendingUp} color="purple" />

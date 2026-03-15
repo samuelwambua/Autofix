@@ -86,7 +86,7 @@ const ReviewManagement = () => {
     <PageWrapper title="Reviews" subtitle="Monitor client feedback and service ratings.">
 
       {/* ── Summary Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Reviews"  value={reviews.length}  icon={MessageSquare} color="blue" />
         <StatCard title="Average Rating" value={`${avgRating} / 5`} icon={Star}       color="amber" />
         <StatCard title="5-Star Reviews" value={ratingDist[0].count} icon={Award}     color="emerald" />
@@ -162,7 +162,7 @@ const ReviewManagement = () => {
           <p className="text-white/25 text-xs">Reviews will appear here once clients submit them.</p>
         </GlassCard>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((review) => (
             <GlassCard
               key={review.id}

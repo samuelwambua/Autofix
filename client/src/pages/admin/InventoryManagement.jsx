@@ -139,7 +139,7 @@ const InventoryManagement = () => {
     <PageWrapper title="Inventory" subtitle="Manage spare parts and inventory stock.">
 
       {/* ── Summary Cards ───────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard title="Total Items"  value={items.length}          icon={Package}       color="blue" />
         <StatCard title="Total Stock"  value={items.reduce((a, i) => a + i.quantity, 0)} icon={TrendingUp} color="emerald" />
         <StatCard title="Low Stock"    value={lowStockItems.length}  icon={AlertTriangle} color={lowStockItems.length > 0 ? 'rose' : 'emerald'} />
@@ -312,7 +312,7 @@ const InventoryManagement = () => {
                 {...register('supplier_contact')} className={inputClass(!!errors.supplier_contact)} />
             </Field>
           </div>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
             <Field label="Quantity" error={errors.quantity?.message}>
               <input type="number" min="0" placeholder="0"
                 {...register('quantity')} className={inputClass(!!errors.quantity)} />
