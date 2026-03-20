@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
+import SubscriptionBanner from '../common/SubscriptionBanner';
 import Header from './Header';
 
 const PageWrapper = ({ children, title, subtitle }) => {
@@ -19,6 +20,9 @@ const PageWrapper = ({ children, title, subtitle }) => {
 
         {/* Header */}
         <Header onMenuClick={() => setSidebarOpen(true)} />
+
+        {/* Subscription Banner */}
+        <SubscriptionBanner />
 
         {/* Page content */}
         <main className="flex-1 p-4 sm:p-6">

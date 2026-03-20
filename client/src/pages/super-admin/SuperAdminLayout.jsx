@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, LogOut, Shield,
+  LayoutDashboard, Building2, LogOut, Shield, Crown,
   ChevronRight, Menu, X,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -9,7 +9,8 @@ import toast from 'react-hot-toast';
 
 const navLinks = [
   { to: '/super-admin/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
-  { to: '/super-admin/garages',   label: 'Garages',    icon: Building2 },
+  { to: '/super-admin/garages',       label: 'Garages',       icon: Building2 },
+  { to: '/super-admin/subscriptions',  label: 'Subscriptions', icon: Crown },
 ];
 
 const SuperAdminLayout = ({ children, title, subtitle }) => {

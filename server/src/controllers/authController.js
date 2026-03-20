@@ -30,6 +30,26 @@ const registerStaff = async (req, res) => {
     // Determine garage_id — use requester's garage if available
     const garage_id = req.user?.garage_id || null;
 
+    // Check staff limit for garage
+    if (garage_id) {
+      const { checkLimit } = require('../middleware/subscriptionMiddleware');
+      const staffCount = await pool.query(
+        'SELECT COUNT(*) FROM users WHERE garage_id = $1', [garage_id]
+      );
+      const { getSubscriptionStatus, PLAN_LIMITS } = require('../middleware/subscriptionMiddleware');
+      const sub = await getSubscriptionStatus(garage_id);
+      if (sub) {
+        const limit = sub.limits.staff;
+        if (limit !== Infinity && parseInt(staffCount.rows[0].count) >= limit) {
+          return res.status(403).json({
+            success: false,
+            limit_reached: true,
+            message: `You have reached the staff limit (${limit}) for your ${sub.plan} plan. Upgrade to Premium for unlimited staff.`,
+          });
+        }
+      }
+    }
+
     const result = await pool.query(
       `INSERT INTO users (first_name, last_name, email, phone, password, role, specialization, garage_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -131,8 +151,8 @@ const registerGarage = async (req, res) => {
 
     // Create the garage (pending approval)
     const garageResult = await pool.query(
-      `INSERT INTO garages (name, email, phone, address, city, country, latitude, longitude, specializations, operating_hours, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending')
+      `INSERT INTO garages (name, email, phone, address, city, country, latitude, longitude, specializations, operating_hours, status, trial_ends_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'pending', NOW() + INTERVAL '30 days')
        RETURNING *`,
       [
         garage_name, garage_email, garage_phone,

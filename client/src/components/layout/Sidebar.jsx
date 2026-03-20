@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCircle, Car, Calendar,
-  ClipboardList, Package, FileText, Star,
+  ClipboardList, Package, FileText, Star, Crown,
   LogOut, Wrench, ChevronRight, Shield, X,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -19,6 +19,7 @@ const navLinks = {
     { to: '/admin/inventory',    label: 'Inventory',    icon: Package },
     { to: '/admin/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/admin/reviews',      label: 'Reviews',      icon: Star },
+    { to: '/admin/subscription',  label: 'Subscription', icon: Crown },
   ],
   [ROLES.SUPERVISOR]: [
     { to: '/supervisor/dashboard',    label: 'Dashboard',    icon: LayoutDashboard },

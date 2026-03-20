@@ -8,6 +8,7 @@ dotenv.config();
 
 const { connectDB }       = require('./config/db');
 const { garageScope }     = require('./middleware/authMiddleware');
+const { checkSubscription } = require('./middleware/subscriptionMiddleware');
 const authRoutes          = require('./routes/authRoutes');
 const clientRoutes        = require('./routes/clientRoutes');
 const staffRoutes         = require('./routes/staffRoutes');
@@ -22,6 +23,7 @@ const dashboardRoutes     = require('./routes/dashboardRoutes');
 const supervisorRoutes    = require('./routes/supervisorRoutes');
 const superAdminRoutes    = require('./routes/superAdminRoutes');
 const garageRoutes        = require('./routes/garageRoutes');
+const subscriptionRoutes   = require('./routes/subscriptionRoutes');
 
 connectDB();
 
@@ -41,18 +43,20 @@ app.use('/api/super-admin', superAdminRoutes);
 app.use('/api/garages',     garageRoutes);
 
 // ─── Garage-Scoped Routes ─────────────────────────────────
-// garageScope middleware ensures all queries filter by garage_id
-app.use('/api/clients',       clientRoutes);
-app.use('/api/staff',         staffRoutes);
-app.use('/api/vehicles',      vehicleRoutes);
-app.use('/api/appointments',  appointmentRoutes);
-app.use('/api/job-cards',     jobCardRoutes);
-app.use('/api/inventory',     inventoryRoutes);
-app.use('/api/reviews',       reviewRoutes);
+// garageScope + checkSubscription ensures data isolation and plan enforcement
+// Apply subscription check to all garage-scoped routes
+app.use('/api/clients',       checkSubscription, clientRoutes);
+app.use('/api/staff',         checkSubscription, staffRoutes);
+app.use('/api/vehicles',      checkSubscription, vehicleRoutes);
+app.use('/api/appointments',  checkSubscription, appointmentRoutes);
+app.use('/api/job-cards',     checkSubscription, jobCardRoutes);
+app.use('/api/inventory',     checkSubscription, inventoryRoutes);
+app.use('/api/reviews',       checkSubscription, reviewRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/invoices',      invoiceRoutes);
-app.use('/api/dashboard',     dashboardRoutes);
-app.use('/api/supervisor',    supervisorRoutes);
+app.use('/api/invoices',      checkSubscription, invoiceRoutes);
+app.use('/api/dashboard',     checkSubscription, dashboardRoutes);
+app.use('/api/supervisor',    checkSubscription, supervisorRoutes);
+app.use('/api/subscription',   subscriptionRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 

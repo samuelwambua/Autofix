@@ -39,7 +39,7 @@ const SuperAdminGarages = () => {
   const [viewGarage, setViewGarage]   = useState(null);
   const [confirmAction, setConfirmAction] = useState(null); // { type, garage }
 
-  const { data, isLoading } = useQuery({ queryKey: ['superAdminGarages'], queryFn: fetchGarages });
+  const { data, isLoading, isError, error } = useQuery({ queryKey: ['superAdminGarages'], queryFn: fetchGarages, staleTime: 0 });
 
   const approveMutation = useMutation({
     mutationFn: (id) => axiosInstance.put(`/super-admin/garages/${id}/approve`).then(r => r.data),
@@ -117,6 +117,11 @@ const SuperAdminGarages = () => {
       {/* ── Garages List ─────────────────────────────────── */}
       {isLoading ? (
         <div className="flex items-center justify-center py-16"><Spinner size="md" text="Loading garages..." /></div>
+      ) : isError ? (
+        <GlassCard className="flex flex-col items-center justify-center py-16 gap-2">
+          <Building2 size={36} className="text-white/20" />
+          <p className="text-white/40 text-sm">Failed to load garages: {error?.message}</p>
+        </GlassCard>
       ) : filtered.length === 0 ? (
         <GlassCard className="flex flex-col items-center justify-center py-16 gap-2">
           <Building2 size={36} className="text-white/20" />

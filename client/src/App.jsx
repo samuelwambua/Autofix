@@ -13,7 +13,8 @@ import AppointmentManagement from './pages/admin/AppointmentManagement';
 import JobCardManagement from './pages/admin/JobCardManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
 import InvoiceManagement from './pages/admin/InvoiceManagement';
-import ReviewManagement  from './pages/admin/ReviewManagement';
+import ReviewManagement    from './pages/admin/ReviewManagement';
+import SubscriptionPage    from './pages/admin/SubscriptionPage';
 
 import MechanicDashboard from './pages/mechanic/MechanicDashboard';
 import MyJobs from './pages/mechanic/MyJobs';
@@ -35,7 +36,8 @@ import GarageProfile from './pages/public/GarageProfile';
 
 // ─── Super Admin Pages ────────────────────────────────────
 import SuperAdminLogin     from './pages/super-admin/SuperAdminLogin';
-import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
+import SuperAdminDashboard       from './pages/super-admin/SuperAdminDashboard';
+import SuperAdminSubscriptions   from './pages/super-admin/SuperAdminSubscriptions';
 import SuperAdminGarages   from './pages/super-admin/SuperAdminGarages';
 import MyVehicles from './pages/client/MyVehicles';
 import MyAppointments from './pages/client/MyAppointments';
@@ -75,6 +77,11 @@ function App() {
             <ProtectedRoute allowedRoles={['admin']}>{el}</ProtectedRoute>
           } />
         ))}
+
+        {/* Admin-only standalone routes */}
+        <Route path="/admin/subscription" element={
+          <ProtectedRoute allowedRoles={['admin']}><SubscriptionPage /></ProtectedRoute>
+        } />
 
         {/* Supervisor */}
         {[
@@ -124,6 +131,9 @@ function App() {
         } />
         <Route path="/super-admin/garages" element={
           <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminGarages /></ProtectedRoute>
+        } />
+        <Route path="/super-admin/subscriptions" element={
+          <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminSubscriptions /></ProtectedRoute>
         } />
 
         <Route path="/" element={<Navigate to="/login" replace />} />
