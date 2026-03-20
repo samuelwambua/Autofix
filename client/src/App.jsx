@@ -29,6 +29,10 @@ import SupervisorReviews from './pages/supervisor/SupervisorReviews';
 
 import ClientDashboard from './pages/client/ClientDashboard';
 
+// ─── Public Map Pages ────────────────────────────────────
+import FindGarage    from './pages/public/FindGarage';
+import GarageProfile from './pages/public/GarageProfile';
+
 // ─── Super Admin Pages ────────────────────────────────────
 import SuperAdminLogin     from './pages/super-admin/SuperAdminLogin';
 import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
@@ -108,6 +112,10 @@ function App() {
         <Route path="/receptionist/dashboard" element={
           <ProtectedRoute allowedRoles={['receptionist']}><ReceptionistDashboard /></ProtectedRoute>
         } />
+
+        {/* Public Map Routes — no auth needed */}
+        <Route path="/find-garage"    element={<FindGarage />} />
+        <Route path="/garages/:id"    element={<GarageProfile />} />
 
         {/* Super Admin */}
         <Route path="/super-admin/login" element={<SuperAdminLogin />} />

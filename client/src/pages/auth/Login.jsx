@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Mail, Lock, Wrench, Eye, EyeOff, Phone } from 'lucide-react';
+import { Mail, Lock, Wrench, Eye, EyeOff, Phone, MapPin } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { loginApi } from '../../api/authApi';
 import useAuthStore from '../../store/authStore';

@@ -21,6 +21,7 @@ const invoiceRoutes       = require('./routes/invoiceRoutes');
 const dashboardRoutes     = require('./routes/dashboardRoutes');
 const supervisorRoutes    = require('./routes/supervisorRoutes');
 const superAdminRoutes    = require('./routes/superAdminRoutes');
+const garageRoutes        = require('./routes/garageRoutes');
 
 connectDB();
 
@@ -37,6 +38,7 @@ app.get('/', (req, res) => res.json({ success: true, message: 'AutoFix API is ru
 // ─── Public / Auth Routes (no garage scope needed) ────────
 app.use('/api/auth',        authRoutes);
 app.use('/api/super-admin', superAdminRoutes);
+app.use('/api/garages',     garageRoutes);
 
 // ─── Garage-Scoped Routes ─────────────────────────────────
 // garageScope middleware ensures all queries filter by garage_id

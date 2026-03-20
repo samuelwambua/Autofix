@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import {
   Car, Calendar, FileText, Star,
-  CheckCircle, Clock, TrendingUp, Bell, Plus,
+  CheckCircle, Clock, TrendingUp, Bell, Plus, MapPin,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
@@ -74,7 +74,32 @@ const ClientDashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* ── My Vehicles ───────────────────────────────── */}
+        {/* ── Find Garage Banner ───────────────────────────── */}
+      <div className="mb-6">
+        <div className="bg-gradient-to-r from-blue-500/20 to-indigo-500/20
+          border border-blue-500/30 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/30 flex items-center justify-center flex-shrink-0">
+              <MapPin size={20} className="text-blue-300" />
+            </div>
+            <div>
+              <p className="text-white font-semibold text-sm">Need a Garage?</p>
+              <p className="text-white/50 text-xs">Find nearby garages on the map and book instantly.</p>
+            </div>
+          </div>
+          <button
+            onClick={() => navigate('/find-garage')}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-indigo-500
+              hover:from-blue-600 hover:to-indigo-600 text-white font-semibold
+              rounded-xl px-4 py-2 text-sm shadow-lg shadow-blue-500/30
+              transition-all whitespace-nowrap flex-shrink-0"
+          >
+            <MapPin size={14} /> Find Garage
+          </button>
+        </div>
+      </div>
+
+      {/* ── My Vehicles ───────────────────────────────── */}
         <GlassCard className="p-5">
           <div className="flex items-center justify-between mb-4">
             <p className="text-white/50 text-xs font-semibold uppercase tracking-wider">
