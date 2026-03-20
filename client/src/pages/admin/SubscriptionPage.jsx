@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import MpesaPaymentModal from '../../components/common/MpesaPaymentModal';
 import { useQuery } from '@tanstack/react-query';
 import { Crown, CheckCircle, X, Clock, Shield, Zap, Star } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
@@ -21,7 +23,10 @@ const PlanFeature = ({ included, text }) => (
 const fmt = (n) => (!n || n >= 999999) ? 'Unlimited' : n.toLocaleString();
 
 const SubscriptionPage = () => {
+  const queryClient = useQueryClient();
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [showPayment, setShowPayment]   = useState(false);
+  const [payMonths, setPayMonths]       = useState(1);
 
   const { data, isLoading } = useQuery({
     queryKey: ['mySubscription'],
@@ -217,7 +222,7 @@ const SubscriptionPage = () => {
         })}
       </div>
 
-      {/* ── Payment Instructions ─────────────────────────── */}
+      {/* ── Payment Section ───────────────────────────────── */}
       {selectedPlan && (
         <GlassCard className="p-6">
           <div className="flex items-center gap-3 mb-4">
@@ -227,30 +232,52 @@ const SubscriptionPage = () => {
             </h3>
           </div>
 
-          <div className="bg-white/5 rounded-xl p-4 border border-white/10 mb-4">
-            <p className="text-white/70 text-sm font-semibold mb-2">How to Subscribe:</p>
-            <div className="space-y-2 text-sm text-white/60">
-              <p>1. Send <span className="text-white font-bold">
-                KES {selectedPlan === 'basic' ? '3,000' : '6,500'}
-              </span> via M-Pesa to:</p>
-              <div className="bg-white/10 rounded-xl p-3 text-center">
-                <p className="text-white font-bold text-lg">0700 000 000</p>
-                <p className="text-white/40 text-xs mt-0.5">AutoFix Payments</p>
-              </div>
-              <p>2. Use your <span className="text-white font-semibold">garage email</span> as the reference</p>
-              <p>3. Send the M-Pesa confirmation code to <span className="text-white font-semibold">
-                support@autofix.com
-              </span></p>
-              <p>4. Your plan will be activated within <span className="text-white font-semibold">
-                1 hour
-              </span> by our team</p>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-end mb-4">
+            <div className="flex flex-col gap-1.5 flex-1">
+              <label className="text-white/70 text-sm font-medium">Duration</label>
+              <select value={payMonths} onChange={(e) => setPayMonths(parseInt(e.target.value))}
+                className="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5
+                  text-white text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50">
+                {[1, 2, 3, 6, 12].map(m => (
+                  <option key={m} value={m} className="bg-slate-800">
+                    {m} month{m > 1 ? 's' : ''} — KES {((selectedPlan === 'premium' ? 6500 : 3000) * m).toLocaleString()}
+                  </option>
+                ))}
+              </select>
             </div>
+            <button
+              onClick={() => setShowPayment(true)}
+              className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500
+                hover:from-emerald-600 hover:to-teal-600 text-white font-bold
+                rounded-xl px-6 py-2.5 text-sm shadow-lg shadow-emerald-500/30
+                transition-all whitespace-nowrap"
+            >
+              <Zap size={16} /> Pay via M-Pesa
+            </button>
           </div>
 
-          <p className="text-white/30 text-xs text-center">
-            Online payment integration coming soon. For now please use M-Pesa manual payment.
-          </p>
+          <div className="flex items-center gap-2 text-white/30 text-xs">
+            <span className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center
+              justify-center text-emerald-400 flex-shrink-0 text-xs font-bold">✓</span>
+            Instant activation after payment confirmation
+          </div>
         </GlassCard>
+      )}
+
+      {/* ── M-Pesa Payment Modal ───────────────────────────── */}
+      {showPayment && (
+        <MpesaPaymentModal
+          isOpen={showPayment}
+          onClose={() => setShowPayment(false)}
+          onSuccess={() => {
+            queryClient.invalidateQueries(['mySubscription']);
+            setSelectedPlan(null);
+            setShowPayment(false);
+          }}
+          type="subscription"
+          plan={selectedPlan}
+          months={payMonths}
+        />
       )}
 
       {/* ── Subscription Plans Comparison ────────────────── */}

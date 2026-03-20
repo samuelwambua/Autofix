@@ -76,6 +76,7 @@ const InvoiceManagement = () => {
   const [viewInvoice, setViewInvoice]   = useState(null);
   const [payInvoice, setPayInvoice]     = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [mpesaInvoice, setMpesaInvoice]   = useState(null);
 
   // ─── Queries ──────────────────────────────────────────
   const { data, isLoading } = useQuery({ queryKey: ['invoices'],  queryFn: getAllInvoicesApi });
