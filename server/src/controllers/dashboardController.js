@@ -3,66 +3,53 @@ const { pool } = require('../config/db');
 // ─── Admin Dashboard ──────────────────────────────────────
 const getAdminDashboard = async (req, res) => {
   try {
-    // Overall counts
+    const gid = req.garage_id;
+
     const counts = await pool.query(
       `SELECT
-        (SELECT COUNT(*) FROM clients WHERE is_active = TRUE) AS total_clients,
-        (SELECT COUNT(*) FROM users WHERE is_active = TRUE) AS total_staff,
-        (SELECT COUNT(*) FROM vehicles) AS total_vehicles,
-        (SELECT COUNT(*) FROM appointments) AS total_appointments,
-        (SELECT COUNT(*) FROM job_cards) AS total_jobs,
-        (SELECT COUNT(*) FROM invoices) AS total_invoices
-      `
+        (SELECT COUNT(*) FROM clients     WHERE is_active = TRUE AND garage_id = $1) AS total_clients,
+        (SELECT COUNT(*) FROM users       WHERE is_active = TRUE AND garage_id = $1) AS total_staff,
+        (SELECT COUNT(*) FROM vehicles    WHERE garage_id = $1) AS total_vehicles,
+        (SELECT COUNT(*) FROM appointments WHERE garage_id = $1) AS total_appointments,
+        (SELECT COUNT(*) FROM job_cards   WHERE garage_id = $1) AS total_jobs,
+        (SELECT COUNT(*) FROM invoices    WHERE garage_id = $1) AS total_invoices`,
+      [gid]
     );
 
-    // Appointment stats
     const appointmentStats = await pool.query(
-      `SELECT status, COUNT(*) AS count
-       FROM appointments
-       GROUP BY status`
+      `SELECT status, COUNT(*) AS count FROM appointments WHERE garage_id = $1 GROUP BY status`, [gid]
     );
 
-    // Job card stats
     const jobStats = await pool.query(
-      `SELECT status, COUNT(*) AS count
-       FROM job_cards
-       GROUP BY status`
+      `SELECT status, COUNT(*) AS count FROM job_cards WHERE garage_id = $1 GROUP BY status`, [gid]
     );
 
-    // Billing stats
     const billingStats = await pool.query(
-      `SELECT
-        COALESCE(SUM(total_amount), 0) AS total_billed,
-        COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) AS total_collected,
-        COALESCE(SUM(CASE WHEN status = 'pending' THEN total_amount ELSE 0 END), 0) AS total_pending,
-        COUNT(CASE WHEN status = 'paid' THEN 1 END) AS paid_invoices,
-        COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_invoices
-       FROM invoices`
+      `SELECT COALESCE(SUM(total_amount), 0) AS total_billed,
+              COALESCE(SUM(CASE WHEN status = 'paid'    THEN total_amount ELSE 0 END), 0) AS total_collected,
+              COALESCE(SUM(CASE WHEN status = 'pending' THEN total_amount ELSE 0 END), 0) AS total_pending,
+              COUNT(CASE WHEN status = 'paid'    THEN 1 END) AS paid_invoices,
+              COUNT(CASE WHEN status = 'pending' THEN 1 END) AS pending_invoices
+       FROM invoices WHERE garage_id = $1`, [gid]
     );
 
-    // Inventory alerts
     const inventoryAlerts = await pool.query(
-      `SELECT COUNT(*) AS low_stock_count
-       FROM inventory
-       WHERE quantity <= reorder_threshold`
+      `SELECT COUNT(*) AS low_stock_count FROM inventory
+       WHERE quantity <= reorder_threshold AND garage_id = $1`, [gid]
     );
 
-    // Recent jobs (last 5)
     const recentJobs = await pool.query(
       `SELECT jc.id, jc.description, jc.status, jc.created_at,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number,
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number,
               c.first_name || ' ' || c.last_name AS client_name,
               u.first_name || ' ' || u.last_name AS mechanic_name
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
        LEFT JOIN users u ON jc.mechanic_id = u.id
-       ORDER BY jc.created_at DESC
-       LIMIT 5`
+       WHERE jc.garage_id = $1 ORDER BY jc.created_at DESC LIMIT 5`, [gid]
     );
 
-    // Recent appointments (last 5)
     const recentAppointments = await pool.query(
       `SELECT a.id, a.service_type, a.appointment_date, a.status,
               c.first_name || ' ' || c.last_name AS client_name,
@@ -70,36 +57,30 @@ const getAdminDashboard = async (req, res) => {
        FROM appointments a
        JOIN clients c ON a.client_id = c.id
        JOIN vehicles v ON a.vehicle_id = v.id
-       ORDER BY a.created_at DESC
-       LIMIT 5`
+       WHERE a.garage_id = $1 ORDER BY a.created_at DESC LIMIT 5`, [gid]
     );
 
-    // Top mechanics by completed jobs
     const topMechanics = await pool.query(
-      `SELECT u.id,
-              u.first_name || ' ' || u.last_name AS mechanic_name,
+      `SELECT u.id, u.first_name || ' ' || u.last_name AS mechanic_name,
               u.specialization,
               COUNT(jc.id) AS completed_jobs,
               ROUND(AVG(r.rating)::numeric, 1) AS average_rating
        FROM users u
-       LEFT JOIN job_cards jc ON u.id = jc.mechanic_id AND jc.status = 'completed'
-       LEFT JOIN reviews r ON u.id = r.mechanic_id
-       WHERE u.role = 'mechanic' AND u.is_active = TRUE
+       LEFT JOIN job_cards jc ON u.id = jc.mechanic_id AND jc.status = 'completed' AND jc.garage_id = $1
+       LEFT JOIN reviews r ON u.id = r.mechanic_id AND r.garage_id = $1
+       WHERE u.role = 'mechanic' AND u.is_active = TRUE AND u.garage_id = $1
        GROUP BY u.id, u.first_name, u.last_name, u.specialization
-       ORDER BY completed_jobs DESC
-       LIMIT 5`
+       ORDER BY completed_jobs DESC LIMIT 5`, [gid]
     );
 
-    // Monthly revenue (last 6 months)
     const monthlyRevenue = await pool.query(
-      `SELECT
-        TO_CHAR(issued_at, 'Mon YYYY') AS month,
-        COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) AS revenue,
-        COUNT(*) AS invoices
+      `SELECT TO_CHAR(issued_at, 'Mon YYYY') AS month,
+              COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) AS revenue,
+              COUNT(*) AS invoices
        FROM invoices
-       WHERE issued_at >= NOW() - INTERVAL '6 months'
+       WHERE issued_at >= NOW() - INTERVAL '6 months' AND garage_id = $1
        GROUP BY TO_CHAR(issued_at, 'Mon YYYY'), DATE_TRUNC('month', issued_at)
-       ORDER BY DATE_TRUNC('month', issued_at) ASC`
+       ORDER BY DATE_TRUNC('month', issued_at) ASC`, [gid]
     );
 
     return res.status(200).json({
@@ -118,76 +99,57 @@ const getAdminDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Admin Dashboard Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error. Please try again.',
-    });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };
-
 
 // ─── Mechanic Dashboard ───────────────────────────────────
 const getMechanicDashboard = async (req, res) => {
   try {
     const mechanicId = req.user.id;
+    const gid        = req.garage_id;
 
-    // Job stats for this mechanic
     const jobStats = await pool.query(
-      `SELECT status, COUNT(*) AS count
-       FROM job_cards
-       WHERE mechanic_id = $1
-       GROUP BY status`,
-      [mechanicId]
+      `SELECT status, COUNT(*) AS count FROM job_cards
+       WHERE mechanic_id = $1 AND garage_id = $2 GROUP BY status`,
+      [mechanicId, gid]
     );
 
-    // Total completed jobs
     const completedJobs = await pool.query(
-      `SELECT COUNT(*) AS total
-       FROM job_cards
-       WHERE mechanic_id = $1 AND status = 'completed'`,
-      [mechanicId]
+      `SELECT COUNT(*) AS total FROM job_cards
+       WHERE mechanic_id = $1 AND status = 'completed' AND garage_id = $2`,
+      [mechanicId, gid]
     );
 
-    // Average rating
     const avgRating = await pool.query(
       `SELECT ROUND(AVG(rating)::numeric, 1) AS average_rating, COUNT(*) AS total_reviews
-       FROM reviews
-       WHERE mechanic_id = $1`,
-      [mechanicId]
+       FROM reviews WHERE mechanic_id = $1 AND garage_id = $2`,
+      [mechanicId, gid]
     );
 
-    // Current active jobs
     const activeJobs = await pool.query(
       `SELECT jc.id, jc.description, jc.status, jc.estimated_completion,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number,
-              c.first_name || ' ' || c.last_name AS client_name,
-              c.phone AS client_phone
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number,
+              c.first_name || ' ' || c.last_name AS client_name, c.phone AS client_phone
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
-       WHERE jc.mechanic_id = $1 AND jc.status NOT IN ('completed')
+       WHERE jc.mechanic_id = $1 AND jc.status != 'completed' AND jc.garage_id = $2
        ORDER BY jc.created_at DESC`,
-      [mechanicId]
+      [mechanicId, gid]
     );
 
-    // Recent completed jobs (last 5)
     const recentCompleted = await pool.query(
       `SELECT jc.id, jc.description, jc.actual_completion,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number
-       FROM job_cards jc
-       JOIN vehicles v ON jc.vehicle_id = v.id
-       WHERE jc.mechanic_id = $1 AND jc.status = 'completed'
-       ORDER BY jc.actual_completion DESC
-       LIMIT 5`,
-      [mechanicId]
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number
+       FROM job_cards jc JOIN vehicles v ON jc.vehicle_id = v.id
+       WHERE jc.mechanic_id = $1 AND jc.status = 'completed' AND jc.garage_id = $2
+       ORDER BY jc.actual_completion DESC LIMIT 5`,
+      [mechanicId, gid]
     );
 
-    // Unread notifications
     const unreadNotifications = await pool.query(
-      `SELECT COUNT(*) AS unread
-       FROM notifications
+      `SELECT COUNT(*) AS unread FROM notifications
        WHERE user_id = $1 AND is_read = FALSE`,
       [mechanicId]
     );
@@ -205,88 +167,62 @@ const getMechanicDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Mechanic Dashboard Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error. Please try again.',
-    });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };
-
 
 // ─── Client Dashboard ─────────────────────────────────────
 const getClientDashboard = async (req, res) => {
   try {
     const clientId = req.user.id;
 
-    // Client's vehicles
     const vehicles = await pool.query(
-      `SELECT * FROM vehicles WHERE client_id = $1`,
-      [clientId]
+      'SELECT * FROM vehicles WHERE client_id = $1', [clientId]
     );
 
-    // Appointment stats
     const appointmentStats = await pool.query(
-      `SELECT status, COUNT(*) AS count
-       FROM appointments
-       WHERE client_id = $1
-       GROUP BY status`,
-      [clientId]
+      `SELECT status, COUNT(*) AS count FROM appointments
+       WHERE client_id = $1 GROUP BY status`, [clientId]
     );
 
-    // Active appointments
     const activeAppointments = await pool.query(
       `SELECT a.id, a.service_type, a.appointment_date, a.status,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number
-       FROM appointments a
-       JOIN vehicles v ON a.vehicle_id = v.id
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number
+       FROM appointments a JOIN vehicles v ON a.vehicle_id = v.id
        WHERE a.client_id = $1 AND a.status NOT IN ('completed', 'cancelled')
-       ORDER BY a.appointment_date ASC`,
-      [clientId]
+       ORDER BY a.appointment_date ASC`, [clientId]
     );
 
-    // Active job cards
     const activeJobs = await pool.query(
       `SELECT jc.id, jc.description, jc.status, jc.estimated_completion,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number,
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number,
               u.first_name || ' ' || u.last_name AS mechanic_name
        FROM job_cards jc
        JOIN vehicles v ON jc.vehicle_id = v.id
        JOIN clients c ON v.client_id = c.id
        LEFT JOIN users u ON jc.mechanic_id = u.id
-       WHERE c.id = $1 AND jc.status NOT IN ('completed')
-       ORDER BY jc.created_at DESC`,
-      [clientId]
+       WHERE c.id = $1 AND jc.status != 'completed'
+       ORDER BY jc.created_at DESC`, [clientId]
     );
 
-    // Pending invoices
     const pendingInvoices = await pool.query(
       `SELECT i.id, i.total_amount, i.status, i.issued_at,
-              v.make || ' ' || v.model AS vehicle_name,
-              jc.description AS job_description
+              v.make || ' ' || v.model AS vehicle_name, jc.description AS job_description
        FROM invoices i
        JOIN job_cards jc ON i.job_id = jc.id
        JOIN vehicles v ON jc.vehicle_id = v.id
        WHERE i.client_id = $1 AND i.status != 'paid'
-       ORDER BY i.issued_at DESC`,
-      [clientId]
+       ORDER BY i.issued_at DESC`, [clientId]
     );
 
-    // Total spent
     const totalSpent = await pool.query(
       `SELECT COALESCE(SUM(total_amount), 0) AS total_spent
-       FROM invoices
-       WHERE client_id = $1 AND status = 'paid'`,
-      [clientId]
+       FROM invoices WHERE client_id = $1 AND status = 'paid'`, [clientId]
     );
 
-    // Unread notifications
     const unreadNotifications = await pool.query(
-      `SELECT COUNT(*) AS unread
-       FROM notifications
-       WHERE client_id = $1 AND is_read = FALSE`,
-      [clientId]
+      `SELECT COUNT(*) AS unread FROM notifications
+       WHERE client_id = $1 AND is_read = FALSE`, [clientId]
     );
 
     return res.status(200).json({
@@ -303,62 +239,49 @@ const getClientDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Client Dashboard Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error. Please try again.',
-    });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };
-
 
 // ─── Receptionist Dashboard ───────────────────────────────
 const getReceptionistDashboard = async (req, res) => {
   try {
-    // Today's appointments
+    const gid = req.garage_id;
+
     const todayAppointments = await pool.query(
       `SELECT a.id, a.service_type, a.appointment_date, a.status,
-              c.first_name || ' ' || c.last_name AS client_name,
-              c.phone AS client_phone,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number
+              c.first_name || ' ' || c.last_name AS client_name, c.phone AS client_phone,
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number
        FROM appointments a
        JOIN clients c ON a.client_id = c.id
        JOIN vehicles v ON a.vehicle_id = v.id
-       WHERE DATE(a.appointment_date) = CURRENT_DATE
-       ORDER BY a.appointment_date ASC`
+       WHERE DATE(a.appointment_date) = CURRENT_DATE AND a.garage_id = $1
+       ORDER BY a.appointment_date ASC`, [gid]
     );
 
-    // Pending appointments (upcoming)
     const pendingAppointments = await pool.query(
       `SELECT a.id, a.service_type, a.appointment_date, a.status,
-              c.first_name || ' ' || c.last_name AS client_name,
-              c.phone AS client_phone,
-              v.make || ' ' || v.model AS vehicle_name,
-              v.plate_number
+              c.first_name || ' ' || c.last_name AS client_name, c.phone AS client_phone,
+              v.make || ' ' || v.model AS vehicle_name, v.plate_number
        FROM appointments a
        JOIN clients c ON a.client_id = c.id
        JOIN vehicles v ON a.vehicle_id = v.id
-       WHERE a.status = 'pending' AND a.appointment_date >= NOW()
-       ORDER BY a.appointment_date ASC
-       LIMIT 10`
+       WHERE a.status = 'pending' AND a.appointment_date >= NOW() AND a.garage_id = $1
+       ORDER BY a.appointment_date ASC LIMIT 10`, [gid]
     );
 
-    // Quick counts
     const counts = await pool.query(
       `SELECT
-        (SELECT COUNT(*) FROM appointments WHERE DATE(appointment_date) = CURRENT_DATE) AS todays_appointments,
-        (SELECT COUNT(*) FROM appointments WHERE status = 'pending') AS pending_appointments,
-        (SELECT COUNT(*) FROM job_cards WHERE status NOT IN ('completed')) AS active_jobs,
-        (SELECT COUNT(*) FROM invoices WHERE status = 'pending') AS pending_invoices,
-        (SELECT COUNT(*) FROM clients WHERE is_active = TRUE) AS total_clients
-      `
+        (SELECT COUNT(*) FROM appointments WHERE DATE(appointment_date) = CURRENT_DATE AND garage_id = $1) AS todays_appointments,
+        (SELECT COUNT(*) FROM appointments WHERE status = 'pending' AND garage_id = $1) AS pending_appointments,
+        (SELECT COUNT(*) FROM job_cards WHERE status != 'completed' AND garage_id = $1) AS active_jobs,
+        (SELECT COUNT(*) FROM invoices WHERE status = 'pending' AND garage_id = $1) AS pending_invoices,
+        (SELECT COUNT(*) FROM clients WHERE is_active = TRUE AND garage_id = $1) AS total_clients`,
+      [gid]
     );
 
-    // Unread notifications
     const unreadNotifications = await pool.query(
-      `SELECT COUNT(*) AS unread
-       FROM notifications
-       WHERE user_id = $1 AND is_read = FALSE`,
+      `SELECT COUNT(*) AS unread FROM notifications WHERE user_id = $1 AND is_read = FALSE`,
       [req.user.id]
     );
 
@@ -373,16 +296,8 @@ const getReceptionistDashboard = async (req, res) => {
     });
   } catch (error) {
     console.error('Receptionist Dashboard Error:', error.message);
-    return res.status(500).json({
-      success: false,
-      message: 'Server error. Please try again.',
-    });
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
   }
 };
 
-module.exports = {
-  getAdminDashboard,
-  getMechanicDashboard,
-  getClientDashboard,
-  getReceptionistDashboard,
-};
+module.exports = { getAdminDashboard, getMechanicDashboard, getClientDashboard, getReceptionistDashboard };

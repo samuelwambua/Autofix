@@ -444,10 +444,10 @@ const createMechanic = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const result = await pool.query(
-      `INSERT INTO users (first_name, last_name, email, phone, password, role, specialization, supervisor_id)
-       VALUES ($1, $2, $3, $4, $5, 'mechanic', $6, $7)
+      `INSERT INTO users (first_name, last_name, email, phone, password, role, specialization, supervisor_id, garage_id)
+       VALUES ($1, $2, $3, $4, $5, 'mechanic', $6, $7, $8)
        RETURNING id, first_name, last_name, email, phone, role, specialization, is_active, created_at`,
-      [first_name, last_name, email || null, phone, hashedPassword, specialization || null, req.user.id]
+      [first_name, last_name, email || null, phone, hashedPassword, specialization || null, req.user.id, req.garage_id]
     );
 
     return res.status(201).json({ success: true, message: 'Mechanic created and added to your team.', data: result.rows[0] });
@@ -575,10 +575,10 @@ const createClient = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const result = await pool.query(
-      `INSERT INTO clients (first_name, last_name, email, phone, password, supervisor_id)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO clients (first_name, last_name, email, phone, password, supervisor_id, garage_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
        RETURNING id, first_name, last_name, email, phone, is_active, created_at`,
-      [first_name, last_name, email || null, phone, hashedPassword, req.user.id]
+      [first_name, last_name, email || null, phone, hashedPassword, req.user.id, req.garage_id]
     );
 
     return res.status(201).json({ success: true, message: 'Client created and added to your supervision.', data: result.rows[0] });

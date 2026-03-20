@@ -10,10 +10,11 @@ const {
   getBillingSummary,
   deleteInvoice,
 } = require('../controllers/invoiceController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, garageScope } = require('../middleware/authMiddleware');
 
 // ─── All routes require login ─────────────────────────────
 router.use(protect);
+router.use(garageScope);
 
 // ─── Client Routes ────────────────────────────────────────
 router.get('/my-invoices', authorize('client'), getMyInvoices);

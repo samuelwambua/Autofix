@@ -73,8 +73,8 @@ const createJobCard = async (req, res) => {
 
     const result = await pool.query(
       `INSERT INTO job_cards
-        (appointment_id, vehicle_id, mechanic_id, supervisor_id, description, estimated_completion, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+        (appointment_id, vehicle_id, mechanic_id, supervisor_id, description, estimated_completion, notes, garage_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
       [
         appointment_id || null,
@@ -84,6 +84,7 @@ const createJobCard = async (req, res) => {
         description,
         estimated_completion || null,
         notes || null,
+        req.garage_id,
       ]
     );
 
@@ -135,7 +136,9 @@ const getAllJobCards = async (req, res) => {
        JOIN clients c ON v.client_id = c.id
        LEFT JOIN users u ON jc.mechanic_id = u.id
        LEFT JOIN users s ON jc.supervisor_id = s.id
-       ORDER BY jc.created_at DESC`
+       WHERE jc.garage_id = $1
+       ORDER BY jc.created_at DESC`,
+      [req.garage_id]
     );
 
     return res.status(200).json({

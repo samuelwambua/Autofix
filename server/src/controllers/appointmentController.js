@@ -68,12 +68,14 @@ const createAppointment = async (req, res) => {
         return res.status(400).json({ success: false, message: 'This mechanic is already booked at that time.' });
     }
 
+    const appt_garage_id = req.user.role === 'client' ? req.user.garage_id : req.garage_id;
+
     const result = await pool.query(
       `INSERT INTO appointments
-        (client_id, vehicle_id, mechanic_id, supervisor_id, service_type, appointment_date, notes)
-       VALUES ($1, $2, $3, $4, $5, $6, $7)
+        (client_id, vehicle_id, mechanic_id, supervisor_id, service_type, appointment_date, notes, garage_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
        RETURNING *`,
-      [owner_id, vehicle_id, mechanic_id || null, supervisor_id || null, service_type, appointmentDateTime, notes || null]
+      [owner_id, vehicle_id, mechanic_id || null, supervisor_id || null, service_type, appointmentDateTime, notes || null, appt_garage_id]
     );
 
     return res.status(201).json({
@@ -104,7 +106,9 @@ const getAllAppointments = async (req, res) => {
        JOIN vehicles v ON a.vehicle_id = v.id
        LEFT JOIN users u ON a.mechanic_id = u.id
        LEFT JOIN users s ON a.supervisor_id = s.id
-       ORDER BY a.appointment_date ASC`
+       WHERE a.garage_id = $1
+       ORDER BY a.appointment_date ASC`,
+      [req.garage_id]
     );
     return res.status(200).json({ success: true, count: result.rows.length, data: result.rows });
   } catch (error) {

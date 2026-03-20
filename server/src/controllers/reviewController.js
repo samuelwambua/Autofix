@@ -67,10 +67,10 @@ const createReview = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO reviews (job_id, client_id, mechanic_id, rating, comment)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO reviews (job_id, client_id, mechanic_id, rating, comment, garage_id)
+       VALUES ($1, $2, $3, $4, $5, $6)
        RETURNING *`,
-      [job_id, req.user.id, job.mechanic_id || null, rating, comment || null]
+      [job_id, req.user.id, job.mechanic_id || null, rating, comment || null, job.garage_id || null]
     );
 
     return res.status(201).json({
@@ -102,7 +102,9 @@ const getAllReviews = async (req, res) => {
        JOIN job_cards jc ON r.job_id = jc.id
        JOIN vehicles v ON jc.vehicle_id = v.id
        LEFT JOIN users u ON r.mechanic_id = u.id
-       ORDER BY r.created_at DESC`
+       WHERE r.garage_id = $1
+       ORDER BY r.created_at DESC`,
+      [req.garage_id]
     );
 
     return res.status(200).json({
@@ -362,7 +364,8 @@ const getGarageRatingSummary = async (req, res) => {
         COUNT(CASE WHEN rating = 3 THEN 1 END) AS three_star,
         COUNT(CASE WHEN rating = 2 THEN 1 END) AS two_star,
         COUNT(CASE WHEN rating = 1 THEN 1 END) AS one_star
-       FROM reviews`
+       FROM reviews WHERE garage_id = $1`,
+      [req.garage_id]
     );
 
     return res.status(200).json({

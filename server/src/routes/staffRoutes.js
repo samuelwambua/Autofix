@@ -11,10 +11,11 @@ const {
   toggleStaffStatus,
   deleteStaff,
 } = require('../controllers/staffController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, garageScope } = require('../middleware/authMiddleware');
 
 // ─── All routes require login ─────────────────────────────
 router.use(protect);
+router.use(garageScope);
 
 // ─── My Profile Routes (any logged in staff) ─────────────
 router.get('/me', getMyProfile);

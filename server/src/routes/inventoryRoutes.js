@@ -10,10 +10,11 @@ const {
   deletePart,
   getInventorySummary,
 } = require('../controllers/inventoryController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, garageScope } = require('../middleware/authMiddleware');
 
 // ─── All routes require login ─────────────────────────────
 router.use(protect);
+router.use(garageScope);
 
 // ─── All Staff Routes ─────────────────────────────────────
 router.get('/', authorize('admin', 'supervisor', 'mechanic', 'receptionist'), getAllParts);

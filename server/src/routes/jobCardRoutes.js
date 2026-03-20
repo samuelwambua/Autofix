@@ -13,10 +13,11 @@ const {
   addPartsToJob,
   deleteJobCard,
 } = require('../controllers/jobCardController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, garageScope } = require('../middleware/authMiddleware');
 
 // ─── All routes require login ─────────────────────────────
 router.use(protect);
+router.use(garageScope);
 
 // ─── Mechanic Routes ──────────────────────────────────────
 router.get('/my-jobs', authorize('mechanic'), getMyJobCards);

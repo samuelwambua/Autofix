@@ -23,9 +23,10 @@ const {
   getMyAppointments,
   getMyReviews,
 } = require('../controllers/supervisorController');
-const { protect, authorize } = require('../middleware/authMiddleware');
+const { protect, authorize, garageScope } = require('../middleware/authMiddleware');
 
 router.use(protect);
+router.use(garageScope);
 router.use(authorize('supervisor'));
 
 // ─── Dashboard ────────────────────────────────────────────
