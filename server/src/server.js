@@ -1,24 +1,26 @@
 const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const dotenv = require('dotenv');
+const cors    = require('cors');
+const helmet  = require('helmet');
+const morgan  = require('morgan');
+const dotenv  = require('dotenv');
 
 dotenv.config();
 
-const { connectDB } = require('./config/db');
-const authRoutes         = require('./routes/authRoutes');
-const clientRoutes       = require('./routes/clientRoutes');
-const staffRoutes        = require('./routes/staffRoutes');
-const vehicleRoutes      = require('./routes/vehicleRoutes');
-const appointmentRoutes  = require('./routes/appointmentRoutes');
-const jobCardRoutes      = require('./routes/jobCardRoutes');
-const inventoryRoutes    = require('./routes/inventoryRoutes');
-const reviewRoutes       = require('./routes/reviewRoutes');
-const notificationRoutes = require('./routes/notificationRoutes');
-const invoiceRoutes      = require('./routes/invoiceRoutes');
-const dashboardRoutes    = require('./routes/dashboardRoutes');
-const supervisorRoutes   = require('./routes/supervisorRoutes');
+const { connectDB }       = require('./config/db');
+const { garageScope }     = require('./middleware/authMiddleware');
+const authRoutes          = require('./routes/authRoutes');
+const clientRoutes        = require('./routes/clientRoutes');
+const staffRoutes         = require('./routes/staffRoutes');
+const vehicleRoutes       = require('./routes/vehicleRoutes');
+const appointmentRoutes   = require('./routes/appointmentRoutes');
+const jobCardRoutes       = require('./routes/jobCardRoutes');
+const inventoryRoutes     = require('./routes/inventoryRoutes');
+const reviewRoutes        = require('./routes/reviewRoutes');
+const notificationRoutes  = require('./routes/notificationRoutes');
+const invoiceRoutes       = require('./routes/invoiceRoutes');
+const dashboardRoutes     = require('./routes/dashboardRoutes');
+const supervisorRoutes    = require('./routes/supervisorRoutes');
+const superAdminRoutes    = require('./routes/superAdminRoutes');
 
 connectDB();
 
@@ -30,11 +32,14 @@ app.use(morgan('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get('/', (req, res) => {
-  res.json({ success: true, message: 'AutoFix API is running...' });
-});
+app.get('/', (req, res) => res.json({ success: true, message: 'AutoFix API is running...' }));
 
-app.use('/api/auth',          authRoutes);
+// ─── Public / Auth Routes (no garage scope needed) ────────
+app.use('/api/auth',        authRoutes);
+app.use('/api/super-admin', superAdminRoutes);
+
+// ─── Garage-Scoped Routes ─────────────────────────────────
+// garageScope middleware ensures all queries filter by garage_id
 app.use('/api/clients',       clientRoutes);
 app.use('/api/staff',         staffRoutes);
 app.use('/api/vehicles',      vehicleRoutes);
@@ -47,9 +52,7 @@ app.use('/api/invoices',      invoiceRoutes);
 app.use('/api/dashboard',     dashboardRoutes);
 app.use('/api/supervisor',    supervisorRoutes);
 
-app.use((req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found' });
-});
+app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -57,6 +60,4 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`✅ AutoFix server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`✅ AutoFix server running on port ${PORT}`));

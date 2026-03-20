@@ -28,6 +28,11 @@ import SupervisorInvoices from './pages/supervisor/SupervisorInvoices';
 import SupervisorReviews from './pages/supervisor/SupervisorReviews';
 
 import ClientDashboard from './pages/client/ClientDashboard';
+
+// ─── Super Admin Pages ────────────────────────────────────
+import SuperAdminLogin     from './pages/super-admin/SuperAdminLogin';
+import SuperAdminDashboard from './pages/super-admin/SuperAdminDashboard';
+import SuperAdminGarages   from './pages/super-admin/SuperAdminGarages';
 import MyVehicles from './pages/client/MyVehicles';
 import MyAppointments from './pages/client/MyAppointments';
 import MyServiceHistory from './pages/client/MyServiceHistory';
@@ -102,6 +107,15 @@ function App() {
         {/* Receptionist */}
         <Route path="/receptionist/dashboard" element={
           <ProtectedRoute allowedRoles={['receptionist']}><ReceptionistDashboard /></ProtectedRoute>
+        } />
+
+        {/* Super Admin */}
+        <Route path="/super-admin/login" element={<SuperAdminLogin />} />
+        <Route path="/super-admin/dashboard" element={
+          <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminDashboard /></ProtectedRoute>
+        } />
+        <Route path="/super-admin/garages" element={
+          <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminGarages /></ProtectedRoute>
         } />
 
         <Route path="/" element={<Navigate to="/login" replace />} />
