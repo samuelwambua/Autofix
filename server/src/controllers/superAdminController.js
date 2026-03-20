@@ -34,83 +34,116 @@ const createSuperAdmin = async (req, res) => {
 };
 
 
-// ─── Super Admin Dashboard ────────────────────────────────
+// ─── Super Admin Dashboard ────────────────────────────────────────────────────
 const getSuperAdminDashboard = async (req, res) => {
   try {
-    // Total garages by status
+    // Garage stats by status
     const garageStats = await pool.query(
       `SELECT status, COUNT(*) AS count FROM garages GROUP BY status`
     );
 
-    // Total clients across all garages
-    const clientStats = await pool.query(
-      `SELECT COUNT(*) AS total_clients FROM clients`
-    );
-
-    // Total staff across all garages
-    const staffStats = await pool.query(
-      `SELECT COUNT(*) AS total_staff FROM users`
-    );
-
-    // Total revenue across all garages
-    const revenueStats = await pool.query(
+    // Platform totals
+    const totals = await pool.query(
       `SELECT
-         COALESCE(SUM(total_amount), 0) AS total_revenue,
-         COALESCE(SUM(CASE WHEN status = 'paid' THEN total_amount ELSE 0 END), 0) AS collected_revenue
-       FROM invoices`
+         (SELECT COUNT(*) FROM clients) AS total_clients,
+         (SELECT COUNT(*) FROM users)   AS total_staff,
+         (SELECT COUNT(*) FROM appointments) AS total_appointments,
+         (SELECT COUNT(*) FROM job_cards) AS total_jobs,
+         (SELECT COALESCE(SUM(total_amount),0) FROM invoices) AS total_revenue,
+         (SELECT COALESCE(SUM(total_amount),0) FROM invoices WHERE status='paid') AS collected_revenue`
     );
 
-    // Total appointments
-    const appointmentStats = await pool.query(
-      `SELECT COUNT(*) AS total_appointments FROM appointments`
-    );
-
-    // Total job cards
-    const jobStats = await pool.query(
-      `SELECT COUNT(*) AS total_jobs FROM job_cards`
-    );
-
-    // Recent garages
+    // Recent & pending garages
     const recentGarages = await pool.query(
       `SELECT id, name, email, phone, city, status, subscription_plan, created_at
-       FROM garages
-       ORDER BY created_at DESC
-       LIMIT 5`
+       FROM garages ORDER BY created_at DESC LIMIT 5`
     );
-
-    // Pending approvals
     const pendingGarages = await pool.query(
       `SELECT id, name, email, phone, city, created_at
-       FROM garages WHERE status = 'pending'
-       ORDER BY created_at ASC`
+       FROM garages WHERE status = 'pending' ORDER BY created_at ASC`
     );
 
-    // Per-garage stats
+    // Per-garage breakdown
     const garageBreakdown = await pool.query(
-      `SELECT
-         g.id, g.name, g.city, g.status, g.subscription_plan,
-         COUNT(DISTINCT u.id) AS staff_count,
-         COUNT(DISTINCT c.id) AS client_count,
-         COUNT(DISTINCT jc.id) AS job_count,
-         COALESCE(SUM(i.total_amount), 0) AS total_revenue
+      `SELECT g.id, g.name, g.city, g.status, g.subscription_plan,
+              COUNT(DISTINCT u.id)  AS staff_count,
+              COUNT(DISTINCT c.id)  AS client_count,
+              COUNT(DISTINCT jc.id) AS job_count,
+              COALESCE(SUM(i.total_amount), 0) AS total_revenue,
+              COALESCE(SUM(CASE WHEN i.status='paid' THEN i.total_amount ELSE 0 END), 0) AS collected_revenue
        FROM garages g
-       LEFT JOIN users u ON u.garage_id = g.id
-       LEFT JOIN clients c ON c.garage_id = g.id
+       LEFT JOIN users u    ON u.garage_id  = g.id
+       LEFT JOIN clients c  ON c.garage_id  = g.id
        LEFT JOIN job_cards jc ON jc.garage_id = g.id
-       LEFT JOIN invoices i ON i.garage_id = g.id
-       GROUP BY g.id, g.name, g.city, g.status, g.subscription_plan
-       ORDER BY g.created_at DESC`
+       LEFT JOIN invoices i  ON i.garage_id  = g.id
+       GROUP BY g.id ORDER BY total_revenue DESC`
     );
 
-    // Monthly garage registrations (last 6 months)
+    // Monthly garage registrations (last 12 months)
     const monthlyGrowth = await pool.query(
-      `SELECT
-         TO_CHAR(created_at, 'Mon YYYY') AS month,
-         COUNT(*) AS count
+      `SELECT TO_CHAR(created_at, 'Mon YYYY') AS month,
+              DATE_TRUNC('month', created_at)  AS month_date,
+              COUNT(*) AS count
        FROM garages
+       WHERE created_at >= NOW() - INTERVAL '12 months'
+       GROUP BY month, month_date ORDER BY month_date ASC`
+    );
+
+    // Monthly revenue across all garages (last 6 months)
+    const monthlyRevenue = await pool.query(
+      `SELECT TO_CHAR(issued_at, 'Mon YYYY') AS month,
+              DATE_TRUNC('month', issued_at)  AS month_date,
+              COALESCE(SUM(CASE WHEN status='paid' THEN total_amount ELSE 0 END), 0) AS revenue,
+              COUNT(*) AS invoice_count
+       FROM invoices
+       WHERE issued_at >= NOW() - INTERVAL '6 months'
+       GROUP BY month, month_date ORDER BY month_date ASC`
+    );
+
+    // Monthly appointments (last 6 months)
+    const monthlyAppointments = await pool.query(
+      `SELECT TO_CHAR(created_at, 'Mon YYYY') AS month,
+              DATE_TRUNC('month', created_at)  AS month_date,
+              COUNT(*) AS count,
+              COUNT(CASE WHEN status='completed' THEN 1 END) AS completed
+       FROM appointments
        WHERE created_at >= NOW() - INTERVAL '6 months'
-       GROUP BY TO_CHAR(created_at, 'Mon YYYY'), DATE_TRUNC('month', created_at)
-       ORDER BY DATE_TRUNC('month', created_at) ASC`
+       GROUP BY month, month_date ORDER BY month_date ASC`
+    );
+
+    // Subscription plan distribution
+    const planDistribution = await pool.query(
+      `SELECT subscription_plan AS plan, COUNT(*) AS count
+       FROM garages GROUP BY subscription_plan ORDER BY count DESC`
+    );
+
+    // Status distribution for job cards across platform
+    const jobStatusDistribution = await pool.query(
+      `SELECT status, COUNT(*) AS count FROM job_cards GROUP BY status`
+    );
+
+    // Top 5 garages by revenue
+    const topGaragesByRevenue = await pool.query(
+      `SELECT g.name, g.city,
+              COALESCE(SUM(CASE WHEN i.status='paid' THEN i.total_amount ELSE 0 END), 0) AS revenue,
+              COUNT(DISTINCT jc.id) AS jobs
+       FROM garages g
+       LEFT JOIN invoices i  ON i.garage_id  = g.id
+       LEFT JOIN job_cards jc ON jc.garage_id = g.id
+       GROUP BY g.id ORDER BY revenue DESC LIMIT 5`
+    );
+
+    // Top 5 garages by client count
+    const topGaragesByClients = await pool.query(
+      `SELECT g.name, g.city, COUNT(DISTINCT c.id) AS clients
+       FROM garages g
+       LEFT JOIN clients c ON c.garage_id = g.id
+       GROUP BY g.id ORDER BY clients DESC LIMIT 5`
+    );
+
+    // Platform-wide appointment status breakdown
+    const appointmentStatus = await pool.query(
+      `SELECT status, COUNT(*) AS count FROM appointments GROUP BY status`
     );
 
     const stats = garageStats.rows.reduce((acc, row) => {
@@ -122,21 +155,28 @@ const getSuperAdminDashboard = async (req, res) => {
       success: true,
       data: {
         garage_stats: {
-          total:     (stats.active || 0) + (stats.pending || 0) + (stats.suspended || 0),
+          total:     (stats.active||0) + (stats.pending||0) + (stats.suspended||0),
           active:    stats.active    || 0,
           pending:   stats.pending   || 0,
           suspended: stats.suspended || 0,
         },
-        total_clients:      parseInt(clientStats.rows[0].total_clients),
-        total_staff:        parseInt(staffStats.rows[0].total_staff),
-        total_revenue:      parseFloat(revenueStats.rows[0].total_revenue),
-        collected_revenue:  parseFloat(revenueStats.rows[0].collected_revenue),
-        total_appointments: parseInt(appointmentStats.rows[0].total_appointments),
-        total_jobs:         parseInt(jobStats.rows[0].total_jobs),
-        recent_garages:     recentGarages.rows,
-        pending_garages:    pendingGarages.rows,
-        garage_breakdown:   garageBreakdown.rows,
-        monthly_growth:     monthlyGrowth.rows,
+        total_clients:       parseInt(totals.rows[0].total_clients),
+        total_staff:         parseInt(totals.rows[0].total_staff),
+        total_appointments:  parseInt(totals.rows[0].total_appointments),
+        total_jobs:          parseInt(totals.rows[0].total_jobs),
+        total_revenue:       parseFloat(totals.rows[0].total_revenue),
+        collected_revenue:   parseFloat(totals.rows[0].collected_revenue),
+        recent_garages:      recentGarages.rows,
+        pending_garages:     pendingGarages.rows,
+        garage_breakdown:    garageBreakdown.rows,
+        monthly_growth:      monthlyGrowth.rows,
+        monthly_revenue:     monthlyRevenue.rows,
+        monthly_appointments: monthlyAppointments.rows,
+        plan_distribution:   planDistribution.rows,
+        job_status_distribution: jobStatusDistribution.rows,
+        top_garages_revenue: topGaragesByRevenue.rows,
+        top_garages_clients: topGaragesByClients.rows,
+        appointment_status:  appointmentStatus.rows,
       },
     });
   } catch (error) {
@@ -144,7 +184,6 @@ const getSuperAdminDashboard = async (req, res) => {
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 };
-
 
 // ─── Get All Garages ──────────────────────────────────────
 const getAllGarages = async (req, res) => {

@@ -13,7 +13,7 @@ import AppointmentManagement from './pages/admin/AppointmentManagement';
 import JobCardManagement from './pages/admin/JobCardManagement';
 import InventoryManagement from './pages/admin/InventoryManagement';
 import InvoiceManagement from './pages/admin/InvoiceManagement';
-import ReviewManagement from './pages/admin/ReviewManagement';
+import ReviewManagement  from './pages/admin/ReviewManagement';
 
 import MechanicDashboard from './pages/mechanic/MechanicDashboard';
 import MyJobs from './pages/mechanic/MyJobs';
