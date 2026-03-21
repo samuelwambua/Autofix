@@ -45,6 +45,7 @@ import MyServiceHistory from './pages/client/MyServiceHistory';
 import MyInvoices from './pages/client/MyInvoices';
 import MyReviews        from './pages/client/MyReviews';
 import MyQuotes         from './pages/client/MyQuotes';
+import VehicleProfile   from './pages/client/VehicleProfile';
 import QuoteManagement  from './pages/admin/QuoteManagement';
 
 const ReceptionistDashboard = () => (
@@ -119,6 +120,7 @@ function App() {
         <Route path="/client/invoices"     element={<ProtectedRoute allowedRoles={['client']}><MyInvoices /></ProtectedRoute>} />
         <Route path="/client/reviews"      element={<ProtectedRoute allowedRoles={['client']}><MyReviews /></ProtectedRoute>} />
         <Route path="/client/quotes"       element={<ProtectedRoute allowedRoles={['client']}><MyQuotes /></ProtectedRoute>} />
+        <Route path="/client/vehicles/:id"  element={<ProtectedRoute allowedRoles={['client']}><VehicleProfile /></ProtectedRoute>} />
 
         {/* Receptionist */}
         <Route path="/receptionist/dashboard" element={
