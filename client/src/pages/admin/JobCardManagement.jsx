@@ -141,8 +141,8 @@ const JobCardManagement = () => {
   });
 
   const addPartsMutation = useMutation({
-    mutationFn: ({ id, part_id, quantity_used }) =>
-      addPartsToJobApi(id, { part_id, quantity_used }),
+    mutationFn: ({ id, inventory_id, quantity }) =>
+      addPartsToJobApi(id, { inventory_id, quantity }),
     onSuccess: () => {
       toast.success('Part added to job.');
       queryClient.invalidateQueries(['jobCards', 'inventory']);
@@ -430,9 +430,9 @@ const JobCardManagement = () => {
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 rounded-lg bg-emerald-500/20
                           flex items-center justify-center text-xs font-bold text-emerald-400">
-                          {m.mechanic_name?.charAt(0)}
+                          {m.first_name?.charAt(0)}{m.last_name?.charAt(0)}
                         </div>
-                        <p className="text-white text-sm">{m.mechanic_name}</p>
+                        <p className="text-white text-sm">{m.first_name} {m.last_name}</p>
                       </div>
                       <button
                         onClick={() => removeMechanicMutation.mutate({ jobId: viewJob.id, mechanicId: m.mechanic_id })}
@@ -561,8 +561,8 @@ const JobCardManagement = () => {
               <button
                 onClick={() => addPartsMutation.mutate({
                   id: addPartsJob.id,
-                  part_id: selectedPart,
-                  quantity_used: partQty,
+                  inventory_id: selectedPart,
+                  quantity: partQty,
                 })}
                 disabled={!selectedPart || addPartsMutation.isPending}
                 className="flex-1 bg-gradient-to-r from-amber-500 to-orange-500

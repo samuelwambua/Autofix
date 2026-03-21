@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
-  Car, Calendar, FileText, Star,
+  Car, Calendar, FileText, Star, ChevronRight,
   CheckCircle, Clock, TrendingUp, Bell, Plus, MapPin,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -36,6 +36,13 @@ const ClientDashboard = () => {
     queryFn: fetchClientDashboard,
     refetchInterval: 60000,
   });
+
+  const { data: quotesData } = useQuery({
+    queryKey: ['myQuotes'],
+    queryFn: () => axiosInstance.get('/quotes/my-quotes').then(r => r.data),
+  });
+
+  const pendingQuotes = (quotesData?.data || []).filter(q => q.status === 'pending' || q.status === 'revised');
 
   if (isLoading) {
     return (
@@ -98,6 +105,29 @@ const ClientDashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Pending Quotes Alert ──────────────────────── */}
+      {pendingQuotes.length > 0 && (
+        <div className="mb-4">
+          <div className="bg-amber-500/20 border border-amber-500/40 rounded-2xl p-4
+            flex items-center justify-between gap-3 cursor-pointer"
+            onClick={() => navigate('/client/quotes')}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/30 flex items-center
+                justify-center flex-shrink-0">
+                <FileText size={18} className="text-amber-300" />
+              </div>
+              <div>
+                <p className="text-amber-200 font-semibold text-sm">
+                  {pendingQuotes.length} repair quote{pendingQuotes.length > 1 ? 's' : ''} need your approval
+                </p>
+                <p className="text-amber-300/60 text-xs">Tap to review and approve</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-amber-300/60 flex-shrink-0" />
+          </div>
+        </div>
+      )}
 
       {/* ── My Vehicles ───────────────────────────────── */}
         <GlassCard className="p-5">

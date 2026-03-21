@@ -43,7 +43,9 @@ import MyVehicles from './pages/client/MyVehicles';
 import MyAppointments from './pages/client/MyAppointments';
 import MyServiceHistory from './pages/client/MyServiceHistory';
 import MyInvoices from './pages/client/MyInvoices';
-import MyReviews from './pages/client/MyReviews';
+import MyReviews        from './pages/client/MyReviews';
+import MyQuotes         from './pages/client/MyQuotes';
+import QuoteManagement  from './pages/admin/QuoteManagement';
 
 const ReceptionistDashboard = () => (
   <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
@@ -71,7 +73,8 @@ function App() {
           { path: '/admin/job-cards',    el: <JobCardManagement /> },
           { path: '/admin/inventory',    el: <InventoryManagement /> },
           { path: '/admin/invoices',     el: <InvoiceManagement /> },
-          { path: '/admin/reviews',      el: <ReviewManagement /> },
+          { path: '/admin/reviews',       el: <ReviewManagement /> },
+          { path: '/admin/quotes',         el: <QuoteManagement /> },
         ].map(({ path, el }) => (
           <Route key={path} path={path} element={
             <ProtectedRoute allowedRoles={['admin']}>{el}</ProtectedRoute>
@@ -93,6 +96,7 @@ function App() {
           { path: '/supervisor/job-cards',    el: <SupervisorJobCards /> },
           { path: '/supervisor/invoices',     el: <SupervisorInvoices /> },
           { path: '/supervisor/reviews',      el: <SupervisorReviews /> },
+          { path: '/supervisor/quotes',       el: <QuoteManagement /> },
         ].map(({ path, el }) => (
           <Route key={path} path={path} element={
             <ProtectedRoute allowedRoles={['supervisor']}>{el}</ProtectedRoute>
@@ -114,6 +118,7 @@ function App() {
         <Route path="/client/jobs"         element={<ProtectedRoute allowedRoles={['client']}><MyServiceHistory /></ProtectedRoute>} />
         <Route path="/client/invoices"     element={<ProtectedRoute allowedRoles={['client']}><MyInvoices /></ProtectedRoute>} />
         <Route path="/client/reviews"      element={<ProtectedRoute allowedRoles={['client']}><MyReviews /></ProtectedRoute>} />
+        <Route path="/client/quotes"       element={<ProtectedRoute allowedRoles={['client']}><MyQuotes /></ProtectedRoute>} />
 
         {/* Receptionist */}
         <Route path="/receptionist/dashboard" element={

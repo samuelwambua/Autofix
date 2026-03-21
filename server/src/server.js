@@ -25,6 +25,7 @@ const superAdminRoutes    = require('./routes/superAdminRoutes');
 const garageRoutes        = require('./routes/garageRoutes');
 const subscriptionRoutes   = require('./routes/subscriptionRoutes');
 const mpesaRoutes          = require('./routes/mpesaRoutes');
+const quoteRoutes          = require('./routes/quoteRoutes');
 
 connectDB();
 
@@ -59,6 +60,7 @@ app.use('/api/dashboard',     checkSubscription, dashboardRoutes);
 app.use('/api/supervisor',    checkSubscription, supervisorRoutes);
 app.use('/api/subscription',   subscriptionRoutes);
 app.use('/api/mpesa',          mpesaRoutes);
+app.use('/api/quotes',         quoteRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 

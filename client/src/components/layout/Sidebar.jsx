@@ -19,6 +19,7 @@ const navLinks = {
     { to: '/admin/inventory',    label: 'Inventory',    icon: Package },
     { to: '/admin/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/admin/reviews',      label: 'Reviews',      icon: Star },
+    { to: '/admin/quotes',        label: 'Quotes',       icon: FileText },
     { to: '/admin/subscription',  label: 'Subscription', icon: Crown },
   ],
   [ROLES.SUPERVISOR]: [
@@ -30,6 +31,7 @@ const navLinks = {
     { to: '/supervisor/job-cards',    label: 'Job Cards',    icon: ClipboardList },
     { to: '/supervisor/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/supervisor/reviews',      label: 'Reviews',      icon: Star },
+    { to: '/supervisor/quotes',       label: 'Quotes',       icon: FileText },
   ],
   [ROLES.MECHANIC]: [
     { to: '/mechanic/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -49,6 +51,7 @@ const navLinks = {
     { to: '/client/jobs',         label: 'Service History', icon: ClipboardList },
     { to: '/client/invoices',     label: 'My Invoices',     icon: FileText },
     { to: '/client/reviews',      label: 'My Reviews',      icon: Star },
+    { to: '/client/quotes',       label: 'Quotes',          icon: ClipboardList },
   ],
 };
 
