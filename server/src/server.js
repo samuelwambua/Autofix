@@ -32,6 +32,8 @@ const vehicleEnhancedRoutes     = require('./routes/vehicleEnhancedRoutes');
 const reminderRoutes            = require('./routes/reminderRoutes');
 const chatRoutes                = require('./routes/chatRoutes');
 const emergencyRoutes           = require('./routes/emergencyRoutes');
+const warrantyRoutes            = require('./routes/warrantyRoutes');
+const loyaltyRoutes             = require('./routes/loyaltyRoutes');
 
 connectDB();
 
@@ -175,6 +177,8 @@ app.use('/api/vehicles-enhanced', vehicleEnhancedRoutes);
 app.use('/api/reminders',     reminderRoutes);
 app.use('/api/chat',          chatRoutes);
 app.use('/api/emergency',     emergencyRoutes);
+app.use('/api/warranties',    warrantyRoutes);
+app.use('/api/loyalty',       loyaltyRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use((err, req, res, next) => {

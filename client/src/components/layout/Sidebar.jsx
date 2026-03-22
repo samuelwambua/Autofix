@@ -23,6 +23,8 @@ const navLinks = {
     { to: '/admin/quotes',        label: 'Quotes',       icon: FileText },
     { to: '/admin/chat',          label: 'Messages',     icon: MessageSquare },
     { to: '/admin/emergency',     label: 'Emergency',    icon: AlertTriangle },
+    { to: '/admin/warranties',    label: 'Warranties',   icon: Shield },
+    { to: '/admin/loyalty',       label: 'Loyalty',      icon: Crown },
     { to: '/admin/subscription',  label: 'Subscription', icon: Crown },
   ],
   [ROLES.SUPERVISOR]: [
@@ -60,6 +62,8 @@ const navLinks = {
     { to: '/client/reminders',    label: 'Reminders',       icon: Bell },
     { to: '/client/chat',         label: 'Messages',        icon: MessageSquare },
     { to: '/client/emergency',    label: 'Emergency',        icon: AlertTriangle },
+    { to: '/client/warranties',   label: 'Warranties',       icon: Shield },
+    { to: '/client/loyalty',      label: 'Rewards',          icon: Crown },
   ],
 };
 

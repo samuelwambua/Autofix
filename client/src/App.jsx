@@ -50,6 +50,10 @@ import SmartReminders      from './pages/client/SmartReminders';
 import ChatPage            from './pages/client/ChatPage';
 import EmergencyPage       from './pages/client/EmergencyPage';
 import EmergencyDashboard  from './pages/admin/EmergencyDashboard';
+import MyWarranties        from './pages/client/MyWarranties';
+import LoyaltyPage         from './pages/client/LoyaltyPage';
+import WarrantyManagement  from './pages/admin/WarrantyManagement';
+import LoyaltyOverview     from './pages/admin/LoyaltyOverview';
 import QuoteManagement  from './pages/admin/QuoteManagement';
 
 const ReceptionistDashboard = () => (
@@ -82,6 +86,8 @@ function App() {
           { path: '/admin/quotes',          el: <QuoteManagement /> },
           { path: '/admin/chat',            el: <ChatPage /> },
           { path: '/admin/emergency',       el: <EmergencyDashboard /> },
+          { path: '/admin/warranties',     el: <WarrantyManagement /> },
+          { path: '/admin/loyalty',        el: <LoyaltyOverview /> },
         ].map(({ path, el }) => (
           <Route key={path} path={path} element={
             <ProtectedRoute allowedRoles={['admin']}>{el}</ProtectedRoute>
@@ -132,6 +138,8 @@ function App() {
         <Route path="/client/reminders"      element={<ProtectedRoute allowedRoles={['client']}><SmartReminders /></ProtectedRoute>} />
         <Route path="/client/chat"           element={<ProtectedRoute allowedRoles={['client']}><ChatPage /></ProtectedRoute>} />
         <Route path="/client/emergency"      element={<ProtectedRoute allowedRoles={['client']}><EmergencyPage /></ProtectedRoute>} />
+        <Route path="/client/warranties"     element={<ProtectedRoute allowedRoles={['client']}><MyWarranties /></ProtectedRoute>} />
+        <Route path="/client/loyalty"        element={<ProtectedRoute allowedRoles={['client']}><LoyaltyPage /></ProtectedRoute>} />
 
         {/* Receptionist */}
         <Route path="/receptionist/dashboard" element={
