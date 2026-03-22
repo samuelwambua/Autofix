@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCircle, Car, Calendar,
   ClipboardList, Package, FileText, Star, Crown, Bell,
+  MessageSquare, AlertTriangle,
   LogOut, Wrench, ChevronRight, Shield, X,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -20,6 +21,8 @@ const navLinks = {
     { to: '/admin/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/admin/reviews',      label: 'Reviews',      icon: Star },
     { to: '/admin/quotes',        label: 'Quotes',       icon: FileText },
+    { to: '/admin/chat',          label: 'Messages',     icon: MessageSquare },
+    { to: '/admin/emergency',     label: 'Emergency',    icon: AlertTriangle },
     { to: '/admin/subscription',  label: 'Subscription', icon: Crown },
   ],
   [ROLES.SUPERVISOR]: [
@@ -32,6 +35,8 @@ const navLinks = {
     { to: '/supervisor/invoices',     label: 'Invoices',     icon: FileText },
     { to: '/supervisor/reviews',      label: 'Reviews',      icon: Star },
     { to: '/supervisor/quotes',       label: 'Quotes',       icon: FileText },
+    { to: '/supervisor/chat',         label: 'Messages',     icon: MessageSquare },
+    { to: '/supervisor/emergency',    label: 'Emergency',    icon: AlertTriangle },
   ],
   [ROLES.MECHANIC]: [
     { to: '/mechanic/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -53,6 +58,8 @@ const navLinks = {
     { to: '/client/reviews',      label: 'My Reviews',      icon: Star },
     { to: '/client/quotes',       label: 'Quotes',          icon: ClipboardList },
     { to: '/client/reminders',    label: 'Reminders',       icon: Bell },
+    { to: '/client/chat',         label: 'Messages',        icon: MessageSquare },
+    { to: '/client/emergency',    label: 'Emergency',        icon: AlertTriangle },
   ],
 };
 
