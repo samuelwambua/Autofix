@@ -65,7 +65,9 @@ const FindGarage = () => {
   const [radius, setRadius]               = useState(20);
   const [mapCenter, setMapCenter]         = useState([-1.2921, 36.8219]); // Default Nairobi
   const [locationError, setLocationError] = useState('');
-  const [searchMode, setSearchMode]       = useState('all'); // 'all' or 'nearby'
+  const [searchMode, setSearchMode]       = useState('all');
+  const [sortBy, setSortBy]               = useState('distance'); // distance | trusted | rating
+  const [filterSpec, setFilterSpec]       = useState(''); // specialization filter
 
   // Load all active garages on mount
   useEffect(() => {
@@ -135,6 +137,20 @@ const FindGarage = () => {
     return colors[plan] || colors.free;
   };
 
+  // Filter by specialization
+  const displayGarages = [...garages]
+    .filter(g => !filterSpec || (g.specializations || []).some(s =>
+      s.toLowerCase().includes(filterSpec.toLowerCase())
+    ))
+    .sort((a, b) => {
+      if (sortBy === 'trusted') return parseFloat(b.most_trusted_score || 0) - parseFloat(a.most_trusted_score || 0);
+      if (sortBy === 'rating')  return parseFloat(b.average_rating || 0) - parseFloat(a.average_rating || 0);
+      return parseFloat(a.distance_km || 0) - parseFloat(b.distance_km || 0);
+    });
+
+  // Get all unique specializations for filter
+  const allSpecs = [...new Set(garages.flatMap(g => g.specializations || []))];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900">
 
@@ -187,6 +203,15 @@ const FindGarage = () => {
               }
             </button>
 
+            {/* Sort */}
+            <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}
+              className="bg-white/10 border border-white/20 rounded-xl px-3 py-1.5
+                text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500/50 hidden sm:block">
+              <option value="distance" className="bg-slate-800">By Distance</option>
+              <option value="trusted"  className="bg-slate-800">Most Trusted</option>
+              <option value="rating"   className="bg-slate-800">Top Rated</option>
+            </select>
+
             {/* Show all */}
             {searchMode === 'nearby' && (
               <button onClick={() => { setSearchMode('all'); loadAllGarages(); setUserLocation(null); }}
@@ -200,6 +225,30 @@ const FindGarage = () => {
 
         {locationError && (
           <p className="text-red-400 text-xs text-center mt-2">{locationError}</p>
+        )}
+
+        {/* Specialization filter chips */}
+        {allSpecs.length > 0 && (
+          <div className="max-w-7xl mx-auto px-4 pb-2 flex gap-2 overflow-x-auto scrollbar-hide">
+            <button onClick={() => setFilterSpec('')}
+              className={`flex-shrink-0 text-xs px-3 py-1 rounded-full border transition-all
+                ${!filterSpec
+                  ? 'bg-blue-500/30 border-blue-500/50 text-blue-200'
+                  : 'bg-white/5 border-white/20 text-white/50 hover:bg-white/10'
+                }`}>
+              All
+            </button>
+            {allSpecs.slice(0, 8).map(spec => (
+              <button key={spec} onClick={() => setFilterSpec(filterSpec === spec ? '' : spec)}
+                className={`flex-shrink-0 text-xs px-3 py-1 rounded-full border transition-all
+                  ${filterSpec === spec
+                    ? 'bg-blue-500/30 border-blue-500/50 text-blue-200'
+                    : 'bg-white/5 border-white/20 text-white/50 hover:bg-white/10'
+                  }`}>
+                {spec}
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
@@ -225,7 +274,7 @@ const FindGarage = () => {
             </div>
           ) : (
             <div className="divide-y divide-white/5">
-              {garages.map((g) => (
+              {displayGarages.map((g) => (
                 <div
                   key={g.id}
                   onClick={() => { setSelectedGarage(g); setMapCenter([parseFloat(g.latitude), parseFloat(g.longitude)]); }}
@@ -233,7 +282,15 @@ const FindGarage = () => {
                     ${selectedGarage?.id === g.id ? 'bg-blue-500/20 border-l-4 border-blue-500' : ''}`}
                 >
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <p className="text-white font-bold text-sm leading-tight">{g.name}</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <p className="text-white font-bold text-sm leading-tight truncate">{g.name}</p>
+                      {g.is_verified && (
+                        <span className="flex-shrink-0 bg-blue-500/20 text-blue-300 text-xs
+                          px-1.5 py-0.5 rounded-full border border-blue-500/30 font-medium">
+                          ✓
+                        </span>
+                      )}
+                    </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium capitalize flex-shrink-0 ${getPlanBadgeColor(g.subscription_plan)}`}>
                       {g.subscription_plan}
                     </span>
@@ -249,7 +306,14 @@ const FindGarage = () => {
                     )}
                   </p>
 
-                  <StarDisplay rating={g.average_rating} />
+                  <div className="flex items-center justify-between">
+                    <StarDisplay rating={g.average_rating} />
+                    {g.most_trusted_score > 0 && (
+                      <span className="text-xs text-purple-300/70">
+                        🏆 {parseFloat(g.most_trusted_score).toFixed(1)} trusted
+                      </span>
+                    )}
+                  </div>
 
                   {g.specializations?.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
@@ -315,7 +379,7 @@ const FindGarage = () => {
             )}
 
             {/* Garage markers */}
-            {garages.map((g) => (
+            {displayGarages.map((g) => (
               <Marker
                 key={g.id}
                 position={[parseFloat(g.latitude), parseFloat(g.longitude)]}

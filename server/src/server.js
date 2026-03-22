@@ -27,6 +27,7 @@ const subscriptionRoutes   = require('./routes/subscriptionRoutes');
 const mpesaRoutes          = require('./routes/mpesaRoutes');
 const quoteRoutes              = require('./routes/quoteRoutes');
 const vehicleEnhancedRoutes    = require('./routes/vehicleEnhancedRoutes');
+const reminderRoutes           = require('./routes/reminderRoutes');
 
 connectDB();
 
@@ -63,6 +64,7 @@ app.use('/api/subscription',   subscriptionRoutes);
 app.use('/api/mpesa',          mpesaRoutes);
 app.use('/api/quotes',             quoteRoutes);
 app.use('/api/vehicles-enhanced',  vehicleEnhancedRoutes);
+app.use('/api/reminders',          reminderRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 

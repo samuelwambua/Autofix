@@ -10,6 +10,7 @@ const {
   suspendGarage,
   reactivateGarage,
   updateSubscription,
+  verifyGarage,
 } = require('../controllers/superAdminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -28,5 +29,6 @@ router.put('/garages/:id/reject',               rejectGarage);
 router.put('/garages/:id/suspend',              suspendGarage);
 router.put('/garages/:id/reactivate',           reactivateGarage);
 router.put('/garages/:id/subscription',         updateSubscription);
+router.put('/garages/:id/verify',            verifyGarage);
 
 module.exports = router;

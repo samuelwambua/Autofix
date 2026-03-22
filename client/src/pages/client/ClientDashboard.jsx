@@ -44,6 +44,12 @@ const ClientDashboard = () => {
 
   const pendingQuotes = (quotesData?.data || []).filter(q => q.status === 'pending' || q.status === 'revised');
 
+  const { data: remindersData } = useQuery({
+    queryKey: ['smartReminders'],
+    queryFn: () => axiosInstance.get('/reminders/smart').then(r => r.data),
+  });
+  const urgentAlerts = (remindersData?.data || []).filter(a => a.priority === 'critical' || a.priority === 'high');
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-900
@@ -105,6 +111,29 @@ const ClientDashboard = () => {
           </button>
         </div>
       </div>
+
+      {/* ── Urgent Alerts Banner ────────────────────────── */}
+      {urgentAlerts.length > 0 && (
+        <div className="mb-4">
+          <div className="bg-red-500/15 border border-red-500/30 rounded-2xl p-4
+            flex items-center justify-between gap-3 cursor-pointer"
+            onClick={() => navigate('/client/reminders')}>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-500/30 flex items-center
+                justify-center flex-shrink-0">
+                <Bell size={18} className="text-red-300" />
+              </div>
+              <div>
+                <p className="text-red-200 font-semibold text-sm">
+                  {urgentAlerts.length} urgent alert{urgentAlerts.length > 1 ? 's' : ''} need attention
+                </p>
+                <p className="text-red-300/60 text-xs">Tap to view reminders</p>
+              </div>
+            </div>
+            <ChevronRight size={16} className="text-red-300/60 flex-shrink-0" />
+          </div>
+        </div>
+      )}
 
       {/* ── Pending Quotes Alert ──────────────────────── */}
       {pendingQuotes.length > 0 && (

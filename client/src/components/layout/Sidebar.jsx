@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, Users, UserCircle, Car, Calendar,
-  ClipboardList, Package, FileText, Star, Crown,
+  ClipboardList, Package, FileText, Star, Crown, Bell,
   LogOut, Wrench, ChevronRight, Shield, X,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -52,6 +52,7 @@ const navLinks = {
     { to: '/client/invoices',     label: 'My Invoices',     icon: FileText },
     { to: '/client/reviews',      label: 'My Reviews',      icon: Star },
     { to: '/client/quotes',       label: 'Quotes',          icon: ClipboardList },
+    { to: '/client/reminders',    label: 'Reminders',       icon: Bell },
   ],
 };
 

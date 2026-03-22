@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Building2, Search, Eye, CheckCircle, Ban,
-  RefreshCw, Trash2, ChevronDown,
+  RefreshCw, Trash2, ChevronDown, BadgeCheck,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import axiosInstance from '../../api/axiosInstance';
@@ -62,6 +62,12 @@ const SuperAdminGarages = () => {
   const reactivateMutation = useMutation({
     mutationFn: (id) => axiosInstance.put(`/super-admin/garages/${id}/reactivate`).then(r => r.data),
     onSuccess: () => { toast.success('Garage reactivated.'); queryClient.invalidateQueries(['superAdminGarages', 'superAdminDashboard']); setConfirmAction(null); },
+    onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
+  });
+
+  const verifyMutation = useMutation({
+    mutationFn: (id) => axiosInstance.put(`/super-admin/garages/${id}/verify`).then(r => r.data),
+    onSuccess: (d) => { toast.success(d.message); queryClient.invalidateQueries(['superAdminGarages']); },
     onError: (err) => toast.error(err.response?.data?.message || 'Failed.'),
   });
 
@@ -173,6 +179,15 @@ const SuperAdminGarages = () => {
                         </button>
                       </>
                     )}
+                    <button onClick={() => verifyMutation.mutate(g.id)}
+                      className={`p-2 rounded-xl transition-all
+                        ${g.is_verified
+                          ? 'text-blue-400 bg-blue-500/10 hover:bg-blue-500/20'
+                          : 'text-white/40 hover:text-blue-400 hover:bg-blue-500/10'
+                        }`}
+                      title={g.is_verified ? 'Remove Verification' : 'Verify Garage'}>
+                      <BadgeCheck size={15} />
+                    </button>
                     {g.status === 'active' && (
                       <button onClick={() => setConfirmAction({ type: 'suspend', garage: g })}
                         className="p-2 rounded-xl text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all" title="Suspend">

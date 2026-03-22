@@ -383,6 +383,34 @@ const updateSubscription = async (req, res) => {
   }
 };
 
+// ─── Verify Garage ────────────────────────────────────────
+const verifyGarage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { trust_score = 80 } = req.body;
+
+    const garage = await pool.query('SELECT * FROM garages WHERE id = $1', [id]);
+    if (garage.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Garage not found.' });
+
+    const isVerified = !garage.rows[0].is_verified;
+
+    await pool.query(
+      `UPDATE garages SET is_verified = $1, verified_at = $2,
+         trust_score = $3, updated_at = NOW() WHERE id = $4`,
+      [isVerified, isVerified ? new Date() : null, isVerified ? trust_score : 0, id]
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `${garage.rows[0].name} has been ${isVerified ? 'verified' : 'unverified'}.`,
+    });
+  } catch (error) {
+    console.error('Verify Garage Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   createSuperAdmin,
   getSuperAdminDashboard,
@@ -393,4 +421,5 @@ module.exports = {
   suspendGarage,
   reactivateGarage,
   updateSubscription,
+  verifyGarage,
 };

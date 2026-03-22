@@ -35,7 +35,15 @@ const getNearbyGarages = async (req, res) => {
          -- Average rating from reviews
          ROUND(AVG(r.rating)::numeric, 1) AS average_rating,
          COUNT(DISTINCT r.id) AS total_reviews,
-         COUNT(DISTINCT jc.id) AS total_jobs
+         COUNT(DISTINCT jc.id) AS total_jobs,
+         g.is_verified, g.trust_score,
+         -- Most Trusted Score: combines rating(40%) + reviews(20%) + jobs(20%) + trust_score(20%)
+         ROUND((
+           COALESCE(AVG(r.rating), 0) * 0.4 +
+           LEAST(COUNT(DISTINCT r.id) / 10.0, 1) * 2 +
+           LEAST(COUNT(DISTINCT jc.id) / 50.0, 1) * 2 +
+           COALESCE(g.trust_score, 0) / 100.0 * 2
+         )::numeric, 2) AS most_trusted_score
        FROM garages g
        LEFT JOIN job_cards jc ON jc.garage_id = g.id
        LEFT JOIN reviews r ON r.garage_id = g.id
@@ -79,9 +87,18 @@ const getAllActiveGarages = async (req, res) => {
          g.specializations, g.operating_hours,
          g.status, g.subscription_plan,
          ROUND(AVG(r.rating)::numeric, 1) AS average_rating,
-         COUNT(DISTINCT r.id) AS total_reviews
+         COUNT(DISTINCT r.id) AS total_reviews,
+         COUNT(DISTINCT jc.id) AS total_jobs,
+         g.is_verified, g.trust_score,
+         ROUND((
+           COALESCE(AVG(r.rating), 0) * 0.4 +
+           LEAST(COUNT(DISTINCT r.id) / 10.0, 1) * 2 +
+           LEAST(COUNT(DISTINCT jc.id) / 50.0, 1) * 2 +
+           COALESCE(g.trust_score, 0) / 100.0 * 2
+         )::numeric, 2) AS most_trusted_score
        FROM garages g
        LEFT JOIN reviews r ON r.garage_id = g.id
+       LEFT JOIN job_cards jc ON jc.garage_id = g.id
        WHERE g.status = 'active' AND g.location IS NOT NULL
        GROUP BY g.id
        ORDER BY g.name ASC`
