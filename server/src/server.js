@@ -32,6 +32,7 @@ const vehicleEnhancedRoutes     = require('./routes/vehicleEnhancedRoutes');
 const reminderRoutes            = require('./routes/reminderRoutes');
 const chatRoutes                = require('./routes/chatRoutes');
 const emergencyRoutes           = require('./routes/emergencyRoutes');
+const supplierAuthRoutes        = require('./routes/supplierAuthRoutes');
 const warrantyRoutes            = require('./routes/warrantyRoutes');
 const loyaltyRoutes             = require('./routes/loyaltyRoutes');
 
@@ -179,6 +180,7 @@ app.use('/api/chat',          chatRoutes);
 app.use('/api/emergency',     emergencyRoutes);
 app.use('/api/warranties',    warrantyRoutes);
 app.use('/api/loyalty',       loyaltyRoutes);
+app.use('/api/supplier/auth',  supplierAuthRoutes);
 
 app.use((req, res) => res.status(404).json({ success: false, message: 'Route not found' }));
 app.use((err, req, res, next) => {

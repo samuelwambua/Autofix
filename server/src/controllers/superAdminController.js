@@ -411,6 +411,143 @@ const verifyGarage = async (req, res) => {
   }
 };
 
+
+// ─── Get All Suppliers ────────────────────────────────────
+const getAllSuppliers = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT s.*,
+              COUNT(DISTINCT sd.id) AS document_count
+       FROM suppliers s
+       LEFT JOIN supplier_documents sd ON sd.supplier_id = s.id
+       GROUP BY s.id
+       ORDER BY s.created_at DESC`
+    );
+    return res.status(200).json({ success: true, count: result.rows.length, data: result.rows });
+  } catch (error) {
+    console.error('Get All Suppliers Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Get Supplier By ID (with documents) ─────────────────
+const getSupplierById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supplier = await pool.query(
+      `SELECT s.*,
+              json_agg(json_build_object(
+                'id', sd.id, 'document_type', sd.document_type,
+                'file_name', sd.file_name, 'file_url', sd.file_url,
+                'uploaded_at', sd.uploaded_at
+              ) ORDER BY sd.uploaded_at) FILTER (WHERE sd.id IS NOT NULL) AS documents
+       FROM suppliers s
+       LEFT JOIN supplier_documents sd ON sd.supplier_id = s.id
+       WHERE s.id = $1 GROUP BY s.id`,
+      [id]
+    );
+    if (supplier.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Supplier not found.' });
+    return res.status(200).json({ success: true, data: supplier.rows[0] });
+  } catch (error) {
+    console.error('Get Supplier By ID Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Approve Supplier ─────────────────────────────────────
+const approveSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supplier = await pool.query('SELECT * FROM suppliers WHERE id = $1', [id]);
+    if (supplier.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Supplier not found.' });
+
+    await pool.query(
+      `UPDATE suppliers SET status = 'active', is_verified = TRUE,
+         verified_at = NOW(), rejection_reason = NULL, updated_at = NOW()
+       WHERE id = $1`,
+      [id]
+    );
+    return res.status(200).json({
+      success: true,
+      message: `${supplier.rows[0].business_name} has been approved and verified.`,
+    });
+  } catch (error) {
+    console.error('Approve Supplier Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Reject Supplier ──────────────────────────────────────
+const rejectSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+
+    const supplier = await pool.query('SELECT * FROM suppliers WHERE id = $1', [id]);
+    if (supplier.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Supplier not found.' });
+
+    await pool.query(
+      `UPDATE suppliers SET status = 'rejected',
+         rejection_reason = $1, updated_at = NOW()
+       WHERE id = $2`,
+      [reason || 'Application rejected.', id]
+    );
+    return res.status(200).json({
+      success: true,
+      message: `${supplier.rows[0].business_name} has been rejected.`,
+    });
+  } catch (error) {
+    console.error('Reject Supplier Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Request More Info from Supplier ─────────────────────
+const requestSupplierInfo = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { message } = req.body;
+
+    await pool.query(
+      `UPDATE suppliers SET rejection_reason = $1, updated_at = NOW() WHERE id = $2`,
+      [`[MORE INFO REQUIRED] ${message || 'Please provide additional information.'}`, id]
+    );
+    return res.status(200).json({
+      success: true,
+      message: 'Request for more information sent to supplier.',
+    });
+  } catch (error) {
+    console.error('Request Supplier Info Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
+// ─── Suspend Supplier ─────────────────────────────────────
+const suspendSupplier = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const supplier = await pool.query('SELECT * FROM suppliers WHERE id = $1', [id]);
+    if (supplier.rows.length === 0)
+      return res.status(404).json({ success: false, message: 'Supplier not found.' });
+
+    const newStatus = supplier.rows[0].status === 'suspended' ? 'active' : 'suspended';
+    await pool.query(
+      `UPDATE suppliers SET status = $1, updated_at = NOW() WHERE id = $2`,
+      [newStatus, id]
+    );
+    return res.status(200).json({
+      success: true,
+      message: `${supplier.rows[0].business_name} has been ${newStatus}.`,
+    });
+  } catch (error) {
+    console.error('Suspend Supplier Error:', error.message);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+};
+
 module.exports = {
   createSuperAdmin,
   getSuperAdminDashboard,
@@ -422,4 +559,7 @@ module.exports = {
   reactivateGarage,
   updateSubscription,
   verifyGarage,
+  getAllSuppliers, getSupplierById,
+  approveSupplier, rejectSupplier,
+  requestSupplierInfo, suspendSupplier,
 };

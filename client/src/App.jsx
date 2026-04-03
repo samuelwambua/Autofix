@@ -38,6 +38,11 @@ import GarageProfile from './pages/public/GarageProfile';
 import SuperAdminLogin     from './pages/super-admin/SuperAdminLogin';
 import SuperAdminDashboard       from './pages/super-admin/SuperAdminDashboard';
 import SuperAdminSubscriptions   from './pages/super-admin/SuperAdminSubscriptions';
+import SuperAdminSuppliers       from './pages/super-admin/SuperAdminSuppliers';
+import SupplierRegister          from './pages/supplier/SupplierRegister';
+import SupplierLogin             from './pages/supplier/SupplierLogin';
+import SupplierDocuments         from './pages/supplier/SupplierDocuments';
+import SupplierStatus            from './pages/supplier/SupplierStatus';
 import SuperAdminGarages   from './pages/super-admin/SuperAdminGarages';
 import MyVehicles from './pages/client/MyVehicles';
 import MyAppointments from './pages/client/MyAppointments';
@@ -161,6 +166,15 @@ function App() {
         <Route path="/super-admin/subscriptions" element={
           <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminSubscriptions /></ProtectedRoute>
         } />
+        <Route path="/super-admin/suppliers" element={
+          <ProtectedRoute allowedRoles={['super_admin']}><SuperAdminSuppliers /></ProtectedRoute>
+        } />
+
+        {/* Supplier Routes — no auth required for register/login */}
+        <Route path="/supplier/register"  element={<SupplierRegister />} />
+        <Route path="/supplier/login"     element={<SupplierLogin />} />
+        <Route path="/supplier/documents" element={<SupplierDocuments />} />
+        <Route path="/supplier/status"    element={<SupplierStatus />} />
 
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="*" element={<Navigate to="/login" replace />} />

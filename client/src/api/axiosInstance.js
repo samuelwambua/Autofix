@@ -5,32 +5,37 @@ const axiosInstance = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// ─── Request interceptor — attach token ───────────────────
-axiosInstance.interceptors.request.use(
-  (config) => {
-    try {
-      const persisted = localStorage.getItem('autofix_auth');
-      if (persisted) {
-        const { state } = JSON.parse(persisted);
-        if (state?.token) {
-          config.headers.Authorization = `Bearer ${state.token}`;
-        }
-      }
-    } catch (e) {
-      console.error('Token read error:', e);
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
+axiosInstance.interceptors.request.use((config) => {
+  const auth         = JSON.parse(localStorage.getItem('autofix_auth'));
+  const supplierAuth = JSON.parse(localStorage.getItem('autofix_supplier'));
 
-// ─── Response interceptor — handle 401 ───────────────────
+  const mainToken     = auth?.state?.token;
+  const supplierToken = supplierAuth?.state?.token;
+
+  // Supplier routes ALWAYS use supplier token exclusively
+  const isSupplierRoute = config.url?.startsWith('/supplier');
+
+  let token;
+  if (isSupplierRoute) {
+    token = supplierToken; // never fall back to main token for supplier routes
+  } else {
+    token = mainToken || supplierToken;
+  }
+
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
 axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('autofix_auth');
-      window.location.href = '/login';
+      const currentPath = window.location.pathname;
+      if (!currentPath.includes('/login') && !currentPath.includes('/register')) {
+        if (currentPath.startsWith('/supplier')) {
+          window.location.href = '/supplier/login';
+        }
+      }
     }
     return Promise.reject(error);
   }

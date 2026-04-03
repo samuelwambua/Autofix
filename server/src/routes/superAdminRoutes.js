@@ -11,6 +11,9 @@ const {
   reactivateGarage,
   updateSubscription,
   verifyGarage,
+  getAllSuppliers, getSupplierById,
+  approveSupplier, rejectSupplier,
+  requestSupplierInfo, suspendSupplier,
 } = require('../controllers/superAdminController');
 const { protect, authorize } = require('../middleware/authMiddleware');
 
@@ -30,5 +33,13 @@ router.put('/garages/:id/suspend',              suspendGarage);
 router.put('/garages/:id/reactivate',           reactivateGarage);
 router.put('/garages/:id/subscription',         updateSubscription);
 router.put('/garages/:id/verify',            verifyGarage);
+
+// ─── Supplier Management ──────────────────────────────────
+router.get('/suppliers',                     getAllSuppliers);
+router.get('/suppliers/:id',                 getSupplierById);
+router.put('/suppliers/:id/approve',         approveSupplier);
+router.put('/suppliers/:id/reject',          rejectSupplier);
+router.put('/suppliers/:id/request-info',    requestSupplierInfo);
+router.put('/suppliers/:id/suspend',         suspendSupplier);
 
 module.exports = router;

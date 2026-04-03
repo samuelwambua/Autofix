@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
-  LayoutDashboard, Building2, LogOut, Shield, Crown,
+  LayoutDashboard, Building2, LogOut, Shield, Crown, Store,
   ChevronRight, Menu, X,
 } from 'lucide-react';
 import useAuthStore from '../../store/authStore';
@@ -11,6 +11,7 @@ const navLinks = [
   { to: '/super-admin/dashboard', label: 'Dashboard',  icon: LayoutDashboard },
   { to: '/super-admin/garages',       label: 'Garages',       icon: Building2 },
   { to: '/super-admin/subscriptions',  label: 'Subscriptions', icon: Crown },
+  { to: '/super-admin/suppliers',      label: 'Suppliers',     icon: Store },
 ];
 
 const SuperAdminLayout = ({ children, title, subtitle }) => {
